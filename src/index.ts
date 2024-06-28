@@ -1,0 +1,1 @@
+export { KmapSolvee } from './KmapSolvee';

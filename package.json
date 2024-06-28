@@ -1,0 +1,60 @@
+{
+  "name": "kmap-solvee",
+  "version": "0.9.0",
+  "description": "Interactively solve mathematical tasks",
+  "license": "MIT",
+  "author": "Holger Engels",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/holgerengels/kmap-solve-tree.git"
+  },
+  "homepage": "https://kmap.eu",
+  "keywords": [
+    "kmap",
+    "knowlede card",
+    "school",
+    "math",
+    "term",
+    "strategy",
+    "decision tree"
+  ],
+  "type": "module",
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./kmap-solve-tree.js": "./dist/src/kmap-solve-tree.js"
+  },
+  "scripts": {
+    "start": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"wds\"",
+    "build": "tsc -w",
+    "prepublish": "tsc",
+    "lint": "eslint --ext .ts,.html . --ignore-path .gitignore && prettier \"**/*.ts\" --check --ignore-path .gitignore",
+    "format": "eslint --ext .ts,.html . --fix --ignore-path .gitignore && prettier \"**/*.ts\" --write --ignore-path .gitignore",
+    "storybook": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"wds -c .storybook/server.mjs\"",
+    "storybook:build": "tsc && build-storybook"
+  },
+  "engines": {
+    "npm": ">=8.5.0",
+    "node": ">=16.14.2"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.7",
+    "@web/dev-server": "~0.4.6",
+    "@web/dev-server-storybook": "^2.0.3",
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.21.5",
+    "prettier": "^3.3.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@cortex-js/compute-engine": "file:../../compute-engine",
+    "katex": "^0.16.10",
+    "lit": "^2.8.0"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "arrowParens": "avoid"
+  }
+}
