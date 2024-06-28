@@ -3,7 +3,7 @@ import '../src/kmap-solvee.js';
 
 export default {
   title: 'KmapSolveTree',
-  component: 'kmap-solve-tree',
+  component: 'kmap-solvee',
   argTypes: {
     textColor: { control: 'color' },
     backgroundColor: { control: 'color' },
@@ -30,11 +30,11 @@ const Template: Story<ArgTypes> = ({
   borderColor,
   slot,
 }: ArgTypes) => html`
-  <kmap-solve-tree
-    style="--kmap-solve-tree-text-color: ${textColor || 'black'} --kmap-solve-tree-background-color: ${backgroundColor || 'black'} --kmap-solve-tree-border-color: ${borderColor || 'black'}"
+  <kmap-solvee
+    style="--kmap-solvee-text-color: ${textColor || 'black'} --kmap-solvee-background-color: ${backgroundColor || 'black'} --kmap-solvee-border-color: ${borderColor || 'black'}"
   >
     ${slot}
-    <kmap-solve-tree>
+    <kmap-solvee>
       <action gain="start">
         <step>\`2x^2- 4x = 6\`</step>
         <action gain="dead end">
@@ -66,8 +66,8 @@ const Template: Story<ArgTypes> = ({
           </action>
         </action>
       </action>
-    </kmap-solve-tree>
-  </kmap-solve-tree>
+    </kmap-solvee>
+  </kmap-solvee>
 `;
 
 export const Regular = Template.bind({});

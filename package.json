@@ -1,29 +1,29 @@
 {
   "name": "kmap-solvee",
   "version": "0.9.0",
-  "description": "Interactively solve mathematical tasks",
+  "description": "Interactively solve mathematical equations",
   "license": "MIT",
   "author": "Holger Engels",
   "repository": {
     "type": "git",
-    "url": "https://github.com/holgerengels/kmap-solve-tree.git"
+    "url": "https://github.com/holgerengels/kmap-solvee.git"
   },
   "homepage": "https://kmap.eu",
   "keywords": [
     "kmap",
-    "knowlede card",
     "school",
     "math",
+    "equation",
     "term",
     "strategy",
-    "decision tree"
+    "solve"
   ],
   "type": "module",
   "main": "dist/src/index.js",
   "module": "dist/src/index.js",
   "exports": {
     ".": "./dist/src/index.js",
-    "./kmap-solve-tree.js": "./dist/src/kmap-solve-tree.js"
+    "./kmap-solvee.js": "./dist/src/kmap-solvee.js"
   },
   "scripts": {
     "start": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"wds\"",
