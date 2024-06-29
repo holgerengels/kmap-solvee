@@ -5,6 +5,8 @@ import {BoxedExpression, BoxedRule, BoxedSubstitution, ComputeEngine} from "@cor
 import katex from 'katex';
 import {katexStyles} from "./katex-css.js";
 
+const LOGGING = false;
+
 const ce = new ComputeEngine();
 const latexOptions = {
   decimalMarker: "{,}",
@@ -40,7 +42,7 @@ interface Strategy {
 }
 
 function json(exp: BoxedExpression) {
-  console.log(JSON.stringify(exp.json))
+  if (LOGGING) console.log(JSON.stringify(exp.json))
 }
 
 export class KmapSolvee extends LitElement {
@@ -61,7 +63,7 @@ export class KmapSolvee extends LitElement {
       display: flex;
       flex-flow: row wrap;
     }
-    span.eq, span.err, span.op {
+    span.eq, span.err, span.op, span.sols {
       margin: 4px;
       padding: 8px;
       border-radius: 8px;
@@ -85,6 +87,7 @@ export class KmapSolvee extends LitElement {
       display: inline-flex;
       align-items: center;
       font-size: 1.21em;
+      white-space: nowrap;
     }
     div.ops {
       display: flex;
@@ -104,6 +107,7 @@ export class KmapSolvee extends LitElement {
     span.op button {
       border: none;
       background-color: transparent;
+      font-weight: bold;
     }
   `,
   katexStyles];
@@ -119,13 +123,16 @@ export class KmapSolvee extends LitElement {
   private equation?: Equation;
 
   @state()
+  private solutions?: BoxedExpression[];
+
+  @state()
   private selected?: Equation;
+
   private valid: boolean = true;
 
   protected willUpdate(_changedProperties: PropertyValues) {
     if (_changedProperties.has("operationNames")) {
       let names = this.operationNames ? this.operationNames.split(",").map(n => n.trim()).map(n => sets.has(n) ? sets.get(n) : n).flat() : [];
-      console.log(names);
       let ops: Operation[] = []
       names.forEach(n => {
         for (const operation of operations) {
@@ -139,34 +146,19 @@ export class KmapSolvee extends LitElement {
 
   updateSlotted({target}) {
     let content = target.assignedNodes().map((n) => n.textContent).join('');
-    console.log(content)
     if (content) {
       let pos = content.indexOf('=')
       this.equation = { variable: "x", left: ce.parse(content.substring(0, pos))!, right: ce.parse(content.substring(pos+1))!}
       this.selected = this.equation
-      console.log(this.equation)
     }
   }
 
+  /*
   protected async firstUpdated() {
-    //ce.rules(rules);
-    //json(ce.box(["Square", ["Exp", ["Multiply", "2", "x"]]]).simplify())
-    //json(ce.box(["Square", ["Exp", ["Multiply", "2", "x"]]]).simplify())
-    //json(ce.box(["Square", ["Exp", ["Multiply", "2", "x"]]]).simplify())
-    //json(ce.parse("e^xe^x").simplify())
-    //json(ce.parse("e^{2x}e^x").simplify())
-    //json(ce.parse("\\frac{3a}{3a}").simplify())
-    //json(ce.parse("\\frac{e^x}{e^x}").simplify())
-
-    //this.equation = {variable: "x", left: ce.box(["Add", ["Multiply", ["Power", "x", "4"], 2], ["Power", "x", "2"]]), right: ce.box("1")};
-    //this.equation = {variable: "x", left: ce.box(["Add", ["Multiply", ["Power", "x", "4"], 2], ["Power", "x", "2"]]), right: ce.box("0")};
-    //this.equation = {variable: "x", left: ce.parse("e^{2x}-e^x"), right: ce.box("1")};
-    //this.selected = this.equation;
-    //this.apply(FACTORIZE, this.selected, ce.parse("e^x"))
-    json(ce.parse("\\frac{e^x}{e^x}").simplify())
-    json(ce.parse("\\frac{e^x + e^{2x}}{e^x}").simplify())
+    json(ce.parse("ee^xe^{-x}"))
     json(ce.parse("ee^xe^{-x}").simplify())
   }
+   */
 
   apply(op: Operation, e: Equation, arg?: BoxedExpression) {
     console.assert(e)
@@ -181,7 +173,24 @@ export class KmapSolvee extends LitElement {
     this.selected = e.derived[0];
     this.requestUpdate();
     this.log(results);
+    let solutions: BoxedExpression[] = [];
+    results.forEach(r => {
+      if (r.left.isEqual(ce.box("x")) && r.right.isNumber)
+        solutions.push(r.right)
+    });
+    if (solutions.length > 0)
+      this.solutions = Array.from(new Set([...(this.solutions ? this.solutions : []), ...solutions])).sort((a, b) => a.isGreater(b) ? 1 : -1);
+
     return results;
+  }
+
+  private perform(o: Operation) {
+    if (!this.selected)
+      return;
+    let ie = o.arg ? (this.shadowRoot!.getElementById("i_" + o.name) as HTMLInputElement) : undefined;
+    let arg= ie && ie.value && ie.value !== "" ? ce.parse(ie.value) : undefined;
+    this.apply(o, this.selected, arg);
+    if (ie) ie.value = "";
   }
 
   private log(eqs: Equation[]) {
@@ -194,7 +203,6 @@ export class KmapSolvee extends LitElement {
     e.arg = undefined;
     this.selected = e;
   }
-
   renderEquation(e: Equation): TemplateResult {
     return html`
       <div class="block">
@@ -211,6 +219,7 @@ export class KmapSolvee extends LitElement {
       </div>
     `;
   }
+
   renderOperation(o: Operation): TemplateResult {
     return html`
       <span class="op" title="${o.help}">
@@ -218,15 +227,6 @@ export class KmapSolvee extends LitElement {
       ${o.arg ? html`<input id="${"i_" + o.name}" type="text" size="2" @keydown="${(e) => { if (e.code === "Enter") this.perform(o)}}">` : undefined}
       </span>
     `;
-  }
-
-  private perform(o: Operation) {
-    if (!this.selected)
-      return;
-    let ie = o.arg ? (this.shadowRoot!.getElementById("i_" + o.name) as HTMLInputElement) : undefined;
-    let arg= ie && ie.value && ie.value !== "" ? ce.parse(ie.value) : undefined;
-    this.apply(o, this.selected, arg);
-    if (ie) ie.value = "";
   }
 
   render() {
@@ -239,6 +239,9 @@ export class KmapSolvee extends LitElement {
       </div>
       <div class="eqs">
         ${this.equation ? html`${this.renderEquation(this.equation)}` : ``}
+      </div>
+      <div class="eqs">
+        <span class="sols">${latex(this.solutions ? ce.box(["Equal","L_doublestruck",["Set", ...this.solutions]]) : ce.box(["Equal","L_doublestruck",["Set", ce.parse("\\text{...}")]]))}</span>
       </div>
     `;
   }
@@ -256,19 +259,20 @@ export class KmapSolvee extends LitElement {
     return this.valid;
   }
 }
-function assert(assertion: boolean, message?: string, params?: any[]) {
-  console.assert(assertion, message, params)
-  if (!assertion)
-    throw new Error();
-}
+
 function latex(expression: BoxedExpression) {
-  console.log(JSON.stringify(expression.json))
+  if (LOGGING) console.log(JSON.stringify(expression.json))
   return renderLatex(expression.toLatex(latexOptions))
 }
 function renderLatex(tex: string) {
   tex = tex.replace(/\\exponentialE/g, "e");
   tex = tex.replace(/\\exp\(([^()]*)\)/g, "e^{$1}");
-  return html`${unsafeHTML(katex.renderToString(tex, { output: "html", throwOnError: false, trust: true, displayMode: true }))}`;
+  return html`${unsafeHTML(katex.renderToString(tex, { output: "html", strict: false, throwOnError: false, trust: true, displayMode: true }))}`;
+}
+function assert(assertion: boolean, message?: string, params?: any[]) {
+  console.assert(assertion, message, params)
+  if (!assertion)
+    throw new Error();
 }
 function error(e: Equation, message: string) {
   return [{
@@ -353,7 +357,7 @@ const SQRT: Operation = { name: "sqrt", title: "√", help: "Äquivalenzumformun
     return html`|&nbsp;&nbsp;${renderLatex("\\sqrt{}")}`
   }
 };
-const SQUARE: Operation = { name: "square", title: "`\\text{□}^2`", help: "Äquivalenzumformung: Beide Seiten quadrieren", arg: false,
+const SQUARE: Operation = { name: "square", title: "`\\square^2`", help: "Äquivalenzumformung: Beide Seiten quadrieren", arg: false,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
     const left = ce.box(["Square", e.left]).simplify();
@@ -366,7 +370,7 @@ const SQUARE: Operation = { name: "square", title: "`\\text{□}^2`", help: "Äq
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${renderLatex("\\text{□}^2")}`
+    return html`|&nbsp;&nbsp;${renderLatex("\\square^2")}`
   }
 };
 const LN: Operation = { name: "ln", title: "ln", help: "Äquivalenzumformung: Auf beiden Seiten die Logarithmusfunktion anwenden", arg: false,
@@ -387,7 +391,7 @@ const LN: Operation = { name: "ln", title: "ln", help: "Äquivalenzumformung: Au
     return html`|&nbsp;&nbsp;${renderLatex("\\ln{}")}`
   }
 };
-const EXP: Operation = { name: "exp", title: "`e^{\\text{☐}}`", help: "Äquivalenzumformung: Auf beiden Seiten die Exponentialfunktion", arg: false,
+const EXP: Operation = { name: "exp", title: "`e^{\\square}`", help: "Äquivalenzumformung: Auf beiden Seiten die Exponentialfunktion", arg: false,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
     const left = ce.box(["Exp", e.left]).simplify();
@@ -400,7 +404,7 @@ const EXP: Operation = { name: "exp", title: "`e^{\\text{☐}}`", help: "Äquiva
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${renderLatex("e^{\\text{☐}}")}`
+    return html`|&nbsp;&nbsp;${renderLatex("e^{\\square}")}`
   }
 };
 const FACTORIZE: Operation = { name: "factorize", title: "Ausklammern", help: "Auf der linken Seite den Ausdruck ausklammern", arg: true,
@@ -460,17 +464,26 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
     const quadraticForm = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"], "_c"]);
+    const quadraticForm2 = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"]]);
 
     let match: BoxedSubstitution | null = null;
     try {
       match = e.left.match(quadraticForm);
     }
-    catch (ex) {}
+    catch (err) {
+      console.log(err)
+    }
+    if (match === null)
+      match = e.left.match(quadraticForm2)
+
     if (match === null || e.right.isNotZero)
       return error(e, "Die Mitternachtsformel kann nur auf Gleichungen der Form ax²+bx+c=0 angewandt werden!");
 
-    let minus = ce.box(["Divide", ["Subtract", ["Negate", match!._b], ["Sqrt", ["Subtract", ["Power", match!._b, 2], ["Multiply", 4, match!._a, match!._c]]]], ["Multiply", 2, match!._a]])
-    let plus = ce.box(["Divide", ["Add", ["Negate", match!._b], ["Sqrt", ["Subtract", ["Power", match!._b, 2], ["Multiply", 4, match!._a, match!._c]]]], ["Multiply", 2, match!._a]])
+    const a = match!._a;
+    const b = match!._b;
+    const c = match!._c || 0;
+    let minus = ce.box(["Divide", ["Subtract", ["Negate", b], ["Sqrt", ["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]]], ["Multiply", 2, a]])
+    let plus = ce.box(["Divide", ["Add", ["Negate", b], ["Sqrt", ["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]]], ["Multiply", 2, a]])
     return [{
       variable: e.variable,
       left: ce.box(e.variable),

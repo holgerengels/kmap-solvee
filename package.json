@@ -49,7 +49,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@cortex-js/compute-engine": "file:../../compute-engine",
+    "@cortex-js/compute-engine": "^0.25.1",
     "katex": "^0.16.10",
     "lit": "^2.8.0"
   },
