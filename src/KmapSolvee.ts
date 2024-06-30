@@ -23,6 +23,7 @@ interface Equation {
   operation?: Operation,
   arg?: BoxedExpression,
   error?: string,
+  message?: string,
 }
 
 interface Operation {
@@ -32,6 +33,11 @@ interface Operation {
   func: (e: Equation, arg?: BoxedExpression) => Equation[];
   arg: boolean;
   render(arg?: BoxedExpression): TemplateResult;
+}
+interface Hint {
+  match: string,
+  operation: string,
+  message: string
 }
 interface Strategy {
   name: string,
@@ -80,12 +86,12 @@ export class KmapSolvee extends LitElement {
       background-color: lightpink;
     }
     span.msg {
-      border: 1px solid coral;
-      background-color: orange;
+      border: 1px solid #fbc02d;
+      background-color: #fffac1;
     }
     span.eq[aria-pressed=true] {
-      border-color: gold;
-      background-color: lightyellow;
+      border-color: #0288d1;
+      background-color: #E1ECF4;
     }
     span.e, span.o {
       display: inline-flex;
@@ -98,12 +104,12 @@ export class KmapSolvee extends LitElement {
       flex-flow: row wrap;
     }
     span.op {
-      border: 1px solid lightblue;
-      font-weight: bold;
+      border: 1px solid #5eb8ff;
+      font-weight: 500;
     }
     span.op:has(button:active) {
-      border: 1px solid darkgray;
-      background-color: lightblue;
+      border: 1px solid #005b9f;
+      background-color: #E1ECF4;
     }
     span.op input {
       border: 1px solid lightgray;
@@ -112,7 +118,7 @@ export class KmapSolvee extends LitElement {
       border: none;
       background-color: transparent;
       font-family: unset;
-      font-weight: bold;
+      font-weight: 500;
     }
   `,
   katexStyles];
@@ -123,8 +129,14 @@ export class KmapSolvee extends LitElement {
   private operationNames?: string;
   @property({attribute: 'solutions'})
   private solutionTex?: string;
-  @property({attribute: 'strategy'})
-  private expectedStrategy?: string;
+  @property({type: Array, converter: {
+      fromAttribute: (value, type) => {
+        return value ? JSON.parse(value) : [];
+      },
+      toAttribute: (value, type) => {
+      }
+    }})
+  private hints: Hint[] = [];
 
   @state()
   private expectedSolutions: BoxedExpression[] = [];
@@ -143,11 +155,6 @@ export class KmapSolvee extends LitElement {
 
   @state()
   private selected?: Equation;
-
-  @state()
-  private correctStrategy?: boolean;
-
-  private UNEXPECTED_STRATEGY?: string;
 
   private valid: boolean = true;
 
@@ -170,26 +177,9 @@ export class KmapSolvee extends LitElement {
         this.expectedSolutions = Array.from(new Set(expected)).sort(NUMERIC_COMPARISION);
       }
     }
-    if (_changedProperties.has("expectedStrategy")) {
-      for (const operation of operations) {
-        if (operation.name === this.expectedStrategy) {
-          this.UNEXPECTED_STRATEGY = "Ergebnis korrekt, aber " + operation.title + " wäre die günstigere Lösungsstrategie gewesen."
-        }
-      }
-    }
     if (_changedProperties.has("solutions")) {
       this.valid = compareArrays(this.expectedSolutions, this.solutions);
       console.log(this.valid)
-    }
-    if (_changedProperties.has("correctStrategy")) {
-      if (this.correctStrategy === this.messages.has(this.UNEXPECTED_STRATEGY))
-        this.requestUpdate("messages");
-
-      if (this.correctStrategy)
-        this.messages.delete(this.UNEXPECTED_STRATEGY)
-      else if (this.valid) {
-        this.messages.add(this.UNEXPECTED_STRATEGY)
-      }
     }
   }
 
@@ -202,21 +192,12 @@ export class KmapSolvee extends LitElement {
     }
   }
 
-  /*
   protected async firstUpdated() {
-    console.log("im" + ce.box(["Multiply",["Complex",0,1],"Pi"]).simplify().isImaginary)
+    //console.log("im " + ce.box(["Multiply",["Complex",0,1],"Pi"]).simplify().isImaginary)
     //json(ce.parse("ee^xe^{-x}"))
     //json(ce.parse("ee^xe^{-x}").simplify())
-    let array: BoxedExpression[] = [
-      ce.box("0"),
-      ce.parse("\\sqrt{7}"),
-      ce.box("-1"),
-    ]
-    console.log(array.sort(NUMERIC_COMPARISION))
-    console.log(ce.parse("\\sqrt{7}").N().isGreater(ce.box(1)))
-    console.log(ce.parse("\\sqrt{7}").N().value)
+    //json(ce.box(["Expand", ce.parse("(x+2)(x+1)^2x")]).evaluate(), true)
   }
-   */
 
   apply(op: Operation, e: Equation, arg?: BoxedExpression) {
     console.assert(e)
@@ -239,6 +220,17 @@ export class KmapSolvee extends LitElement {
     if (solutions.length > 0)
       this.solutions = Array.from(new Set([...this.solutions, ...solutions])).sort(NUMERIC_COMPARISION);
 
+    if (e.message) {
+      this.messages.add(e.message);
+      this.requestUpdate("messages");
+    }
+    for (const hint of this.hints) {
+    if (e.operation.name === hint.operation && ce.box(["Equal", e.left, e.right]).match(ce.parse(hint.match))) {
+        this.messages.add(hint.message);
+        this.requestUpdate("messages");
+      }
+    }
+
     return results;
   }
 
@@ -260,6 +252,7 @@ export class KmapSolvee extends LitElement {
     e.operation = undefined;
     e.arg = undefined;
     this.selected = e;
+    this.messages.clear();
   }
 
   renderEquation(e: Equation): TemplateResult {
@@ -311,25 +304,11 @@ export class KmapSolvee extends LitElement {
   public init() {
     this.equation = { variable: "x", left: this.equation!.left, right: this.equation!.right }
     this.selected = this.equation;
-    this.correctStrategy = undefined;
     this.solutions = [];
     this.messages = new Set();
   }
 
   public bark() {
-    this.correctStrategy = this.checkStrategy(this.equation!);
-  }
-
-  private checkStrategy(equation: Equation): boolean {
-    if (equation.operation?.name === this.expectedStrategy)
-      return true;
-    if (!equation.derived)
-      return false;
-    for (const derived of equation.derived) {
-      if (this.checkStrategy(derived))
-        return true
-    }
-    return false;
   }
 
   public showAnswer() {
@@ -387,7 +366,7 @@ const SUBTRACT: Operation = { name: "subtract", title: "−", help: "Äquivalenz
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;-&nbsp;${latex(ce.box(arg!))}`
+    return html`|&nbsp;&nbsp;${latex(ce.box(["Negate", arg!]))}`
   }
 };
 const MULTIPLY: Operation = { name: "multiply", title: "•", help: "Äquivalenzumformung: Beide Seiten mit dem Ausdruck multiplizieren", arg: true,
@@ -501,6 +480,19 @@ const FACTORIZE: Operation = { name: "factorize", title: "Ausklammern", help: "A
     return html`||&nbsp;&nbsp;${latex(ce.box(arg!))}&nbsp;<i>ausklammern</i>`
   }
 };
+const EXPAND: Operation = { name: "expand", title: "Ausmultiplizieren", help: "Linke Seite ausmultiplizieren", arg: false,
+  func: (e: Equation, arg?: BoxedExpression): Equation[] => {
+    assert(!arg);
+    return [{
+      variable: e.variable,
+      left: ce.box(["ExpandAll", e.left]).evaluate(),
+      right: e.right
+    }]
+  },
+  render: (arg?: BoxedExpression): TemplateResult => {
+    return html`||&nbsp;&nbsp;${latex(ce.box(arg!))}&nbsp;<i>ausmultiplizieren</i>`
+  }
+};
 const SUBSTITUTE: Operation = { name: "substitute", title: "Subst", help: "Alle Vorkommen des Ausdrucks werden durch u ersetzt", arg: true,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(arg !== undefined);
@@ -546,6 +538,7 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
     assert(!arg);
     const quadraticForm = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"], "_c"]);
     const quadraticForm2 = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"]]);
+    const quadraticForm3 = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", "_c"]]);
 
     let match: BoxedSubstitution | null = null;
     try {
@@ -554,9 +547,15 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
     catch (err) {
       console.log(err)
     }
-    if (match === null)
-      match = e.left.match(quadraticForm2)
-
+    let message;
+    if (match === null) {
+      match = e.left.match(quadraticForm2);
+      message = "Kann man MNF lösen, schneller geht's mit x Ausklammern und SvNP";
+    }
+    if (match === null) {
+      match = e.left.match(quadraticForm3);
+      message = "Kann man MNF lösen, schneller geht's mit Wurzel ziehen";
+    }
     if (match === null || e.right.isNotZero)
       return error(e, "Die Mitternachtsformel kann nur auf Gleichungen der Form ax²+bx+c=0 angewandt werden!");
 
@@ -569,10 +568,12 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
       variable: e.variable,
       left: ce.box(e.variable),
       right: minus.evaluate(),
+      message: message
     }, {
       variable: e.variable,
       left: ce.box(e.variable),
       right: plus.evaluate(),
+      message: message
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
@@ -635,17 +636,12 @@ const SIMPLIFY: Operation = { name: "simplify", title: "Vereinfache", help: "Ver
   }
 };
 
-const STRATEGY_SUBSTITUTION_POLY: Strategy = {
-  name: "strategy_substitution", title: "Substitution", help: "Strategie Substitution anwenden", arg: true,
-  operations: [NULL_FORM, SUBSTITUTE, QUADRATIC_FORMULA, RESUBSTITUTE, SQRT]
-};
-
 const operations: Operation[] = [
   ADD, SUBTRACT, MULTIPLY, DIVIDE, SQRT, SQUARE, LN, EXP,
-  FACTORIZE, ZERO_PRODUCT, QUADRATIC_FORMULA, SUBSTITUTE, RESUBSTITUTE, NULL_FORM, SIMPLIFY
+  EXPAND, FACTORIZE, ZERO_PRODUCT, QUADRATIC_FORMULA, SUBSTITUTE, RESUBSTITUTE, NULL_FORM, SIMPLIFY
 ];
 
 const sets: Map<string, string[]> = new Map([
-  ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
-  ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "zero_product", "quadratic_formula", "substitute", "resubstitute"]]
+  ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
+  ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]]
 ]);

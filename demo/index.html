@@ -18,9 +18,14 @@
 </script>
   <div id="demo">
     <kmap-solvee operations="exponential, exp, null_form">e^x+e^{2x}=e</kmap-solvee>
-    <kmap-solvee operations="polynomial, square" solutions="\sqrt{7}, -\sqrt{7}, -1, 1" strategy="substitute">x^4-8x^2+7=0</kmap-solvee>
+    <kmap-solvee operations="polynomial, square" solutions="\sqrt{7}, -\sqrt{7}, -1, 1">x^4-8x^2+7=0</kmap-solvee>
     <kmap-solvee operations="polynomial, square">(x+2)(x+1)^2x=0</kmap-solvee>
-    <kmap-solvee operations="polynomial, square" solutions="0,1" strategy="zero_product">2x^2-2x=0</kmap-solvee>
+    <kmap-solvee operations="polynomial, square" solutions="-1,0,1" hints='[
+      {
+        "match": "_x^4+_x^2=0",
+        "operation": "substitute",
+        "message": "Kann man mit Substitution lösen, schneller gehts mit x² Ausklammern und dem Satz vom Nullprodukt"
+      }]'>2x^4-2x^2=0</kmap-solvee>
   </div>
 </body>
 </html>
