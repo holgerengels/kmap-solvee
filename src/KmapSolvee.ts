@@ -41,8 +41,8 @@ interface Strategy {
   operations: Operation[]
 }
 
-function json(exp: BoxedExpression) {
-  if (LOGGING) console.log(JSON.stringify(exp.json))
+function json(exp: BoxedExpression, log?: boolean) {
+  if (LOGGING || log) console.log(JSON.stringify(exp.json))
 }
 
 export class KmapSolvee extends LitElement {
@@ -63,7 +63,7 @@ export class KmapSolvee extends LitElement {
       display: flex;
       flex-flow: row wrap;
     }
-    span.eq, span.err, span.op, span.sols {
+    span.eq, span.err, span.op, span.sols, span.msg {
       margin: 4px;
       padding: 8px;
       border-radius: 8px;
@@ -76,8 +76,12 @@ export class KmapSolvee extends LitElement {
       border: 1px solid lightgray;
     }
     span.err {
-      border: 1px solid coral;
+      border: 1px solid firebrick;
       background-color: lightpink;
+    }
+    span.msg {
+      border: 1px solid coral;
+      background-color: orange;
     }
     span.eq[aria-pressed=true] {
       border-color: gold;
@@ -107,6 +111,7 @@ export class KmapSolvee extends LitElement {
     span.op button {
       border: none;
       background-color: transparent;
+      font-family: unset;
       font-weight: bold;
     }
   `,
@@ -116,6 +121,14 @@ export class KmapSolvee extends LitElement {
 
   @property({attribute: 'operations'})
   private operationNames?: string;
+  @property({attribute: 'solutions'})
+  private solutionTex?: string;
+  @property({attribute: 'strategy'})
+  private expectedStrategy?: string;
+
+  @state()
+  private expectedSolutions: BoxedExpression[] = [];
+
   @state()
   private operations: Operation[] = [];
 
@@ -123,10 +136,18 @@ export class KmapSolvee extends LitElement {
   private equation?: Equation;
 
   @state()
-  private solutions?: BoxedExpression[];
+  private solutions: BoxedExpression[] = [];
+
+  @state()
+  private messages = new Set();
 
   @state()
   private selected?: Equation;
+
+  @state()
+  private correctStrategy?: boolean;
+
+  private UNEXPECTED_STRATEGY?: string;
 
   private valid: boolean = true;
 
@@ -142,6 +163,34 @@ export class KmapSolvee extends LitElement {
       });
       this.operations = ops;
     }
+    if (_changedProperties.has("solutionTex")) {
+      if (this.solutionTex) {
+        const expected: BoxedExpression[] = [];
+        this.solutionTex.split(",").forEach(n => {expected.push(ce.parse(n))})
+        this.expectedSolutions = Array.from(new Set(expected)).sort(NUMERIC_COMPARISION);
+      }
+    }
+    if (_changedProperties.has("expectedStrategy")) {
+      for (const operation of operations) {
+        if (operation.name === this.expectedStrategy) {
+          this.UNEXPECTED_STRATEGY = "Ergebnis korrekt, aber " + operation.title + " wäre die günstigere Lösungsstrategie gewesen."
+        }
+      }
+    }
+    if (_changedProperties.has("solutions")) {
+      this.valid = compareArrays(this.expectedSolutions, this.solutions);
+      console.log(this.valid)
+    }
+    if (_changedProperties.has("correctStrategy")) {
+      if (this.correctStrategy === this.messages.has(this.UNEXPECTED_STRATEGY))
+        this.requestUpdate("messages");
+
+      if (this.correctStrategy)
+        this.messages.delete(this.UNEXPECTED_STRATEGY)
+      else if (this.valid) {
+        this.messages.add(this.UNEXPECTED_STRATEGY)
+      }
+    }
   }
 
   updateSlotted({target}) {
@@ -155,8 +204,17 @@ export class KmapSolvee extends LitElement {
 
   /*
   protected async firstUpdated() {
-    json(ce.parse("ee^xe^{-x}"))
-    json(ce.parse("ee^xe^{-x}").simplify())
+    console.log("im" + ce.box(["Multiply",["Complex",0,1],"Pi"]).simplify().isImaginary)
+    //json(ce.parse("ee^xe^{-x}"))
+    //json(ce.parse("ee^xe^{-x}").simplify())
+    let array: BoxedExpression[] = [
+      ce.box("0"),
+      ce.parse("\\sqrt{7}"),
+      ce.box("-1"),
+    ]
+    console.log(array.sort(NUMERIC_COMPARISION))
+    console.log(ce.parse("\\sqrt{7}").N().isGreater(ce.box(1)))
+    console.log(ce.parse("\\sqrt{7}").N().value)
   }
    */
 
@@ -179,7 +237,7 @@ export class KmapSolvee extends LitElement {
         solutions.push(r.right)
     });
     if (solutions.length > 0)
-      this.solutions = Array.from(new Set([...(this.solutions ? this.solutions : []), ...solutions])).sort((a, b) => a.isGreater(b) ? 1 : -1);
+      this.solutions = Array.from(new Set([...this.solutions, ...solutions])).sort(NUMERIC_COMPARISION);
 
     return results;
   }
@@ -203,6 +261,7 @@ export class KmapSolvee extends LitElement {
     e.arg = undefined;
     this.selected = e;
   }
+
   renderEquation(e: Equation): TemplateResult {
     return html`
       <div class="block">
@@ -241,15 +300,36 @@ export class KmapSolvee extends LitElement {
         ${this.equation ? html`${this.renderEquation(this.equation)}` : ``}
       </div>
       <div class="eqs">
-        <span class="sols">${latex(this.solutions ? ce.box(["Equal","L_doublestruck",["Set", ...this.solutions]]) : ce.box(["Equal","L_doublestruck",["Set", ce.parse("\\text{...}")]]))}</span>
+        <span class="sols">${latex(this.solutions.length ? ce.box(["Equal","L_doublestruck", ["Delimiter", ["Set", ...this.solutions], ";"]]) : ce.box(["Equal","L_doublestruck", ["Set", ce.parse("\\text{...}")]]))}</span>
+      </div>
+      <div class="eqs">
+        ${Array.from(this.messages).map(m => html`<span class="msg">${m}</span>`)}
       </div>
     `;
   }
 
   public init() {
+    this.equation = { variable: "x", left: this.equation!.left, right: this.equation!.right }
+    this.selected = this.equation;
+    this.correctStrategy = undefined;
+    this.solutions = [];
+    this.messages = new Set();
   }
 
   public bark() {
+    this.correctStrategy = this.checkStrategy(this.equation!);
+  }
+
+  private checkStrategy(equation: Equation): boolean {
+    if (equation.operation?.name === this.expectedStrategy)
+      return true;
+    if (!equation.derived)
+      return false;
+    for (const derived of equation.derived) {
+      if (this.checkStrategy(derived))
+        return true
+    }
+    return false;
   }
 
   public showAnswer() {
@@ -259,6 +339,7 @@ export class KmapSolvee extends LitElement {
     return this.valid;
   }
 }
+const compareArrays = (a, b) => a.length === b.length && a.every((element, index) => element.isEqual(b[index]));
 
 function latex(expression: BoxedExpression) {
   if (LOGGING) console.log(JSON.stringify(expression.json))
@@ -269,19 +350,19 @@ function renderLatex(tex: string) {
   tex = tex.replace(/\\exp\(([^()]*)\)/g, "e^{$1}");
   return html`${unsafeHTML(katex.renderToString(tex, { output: "html", strict: false, throwOnError: false, trust: true, displayMode: true }))}`;
 }
-function assert(assertion: boolean, message?: string, params?: any[]) {
+const assert = (assertion: boolean, message?: string, params?: any[]) => {
   console.assert(assertion, message, params)
   if (!assertion)
     throw new Error();
-}
-function error(e: Equation, message: string) {
-  return [{
-    variable: e.variable,
-    left: e.left,
-    right: e.right,
-    error: message,
-  }];
-}
+};
+const error = (e: Equation, message: string) => [{
+  variable: e.variable,
+  left: e.left,
+  right: e.right,
+  error: message,
+}];
+
+const NUMERIC_COMPARISION = (a, b) => a.value - b.value;
 
 const ADD: Operation = { name: "add", title: "+", help: "Äquivalenzumformung: Auf beiden Seiten den Ausdruck addieren", arg: true,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
@@ -341,7 +422,7 @@ const SQRT: Operation = { name: "sqrt", title: "√", help: "Äquivalenzumformun
     const left = ce.box(["Sqrt", e.left]).simplify();
     const right = ce.box(["Sqrt", e.right]).simplify();
 
-    return left.isImaginary || right.isImaginary
+    return left.N().isImaginary || right.N().isImaginary
       ? error(e, "In ℝ ist die Wurzel einer negativen Zahl nicht definiert!")
       : [{
       variable: e.variable,
@@ -379,8 +460,8 @@ const LN: Operation = { name: "ln", title: "ln", help: "Äquivalenzumformung: Au
     const left = ce.box(["Ln", e.left]).simplify();
     const right = ce.box(["Ln", e.right]).simplify();
 
-    return left.isNaN || right.isNaN
-      ? error(e, "Der Logarithmus ist nur für positive Zahlen definiert!")
+    return left.N().isImaginary || right.N().isImaginary || left.isNaN || right.isNaN
+      ? error(e, "In ℝ ist der Logarithmus nur für positive Zahlen definiert!")
       : [{
       variable: e.variable,
       left: left,
