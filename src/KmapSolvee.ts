@@ -44,7 +44,8 @@ interface Strategy {
   title: string,
   help: string,
   arg: boolean;
-  operations: Operation[]
+
+  apply(e: Equation, callback: (op: Operation, e: Equation, arg?: BoxedExpression) => Promise<Equation[]>): void;
 }
 
 function json(exp: BoxedExpression, log?: boolean) {
@@ -141,22 +142,25 @@ export class KmapSolvee extends LitElement {
   @state()
   private expectedSolutions: BoxedExpression[] = [];
 
+  @property()
+  private strategy?: string;
+
   @state()
   private operations: Operation[] = [];
 
   @property()
-  private equation?: Equation;
+  private equation!: Equation;
+
+  @state()
+  private selected!: Equation;
 
   @state()
   private solutions: BoxedExpression[] = [];
 
+  private valid: boolean = true;
+
   @state()
   private messages = new Set();
-
-  @state()
-  private selected?: Equation;
-
-  private valid: boolean = true;
 
   protected willUpdate(_changedProperties: PropertyValues) {
     if (_changedProperties.has("operationNames")) {
@@ -177,11 +181,17 @@ export class KmapSolvee extends LitElement {
         this.expectedSolutions = Array.from(new Set(expected)).sort(NUMERIC_COMPARISION);
       }
     }
+  }
+
+  /*
+  protected updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has("solutions")) {
       this.valid = compareArrays(this.expectedSolutions, this.solutions);
       console.log(this.valid)
+      console.log(ce.box(["Equal","L_doublestruck", ["Delimiter", ["Set", ...this.solutions], ";"]]).latex)
     }
   }
+   */
 
   updateSlotted({target}) {
     let content = target.assignedNodes().map((n) => n.textContent).join('');
@@ -193,6 +203,8 @@ export class KmapSolvee extends LitElement {
   }
 
   protected async firstUpdated() {
+    console.log("lala")
+    json(ce.box(["Divide",["Add",["Multiply",-6,["Sqrt",2]],-8],2]).simplify(), true)
     //console.log("im " + ce.box(["Multiply",["Complex",0,1],"Pi"]).simplify().isImaginary)
     //json(ce.parse("ee^xe^{-x}"))
     //json(ce.parse("ee^xe^{-x}").simplify())
@@ -312,6 +324,12 @@ export class KmapSolvee extends LitElement {
   }
 
   public showAnswer() {
+    const strat = strategy(this.strategy || "");
+    if (strat)
+      strat.apply(this.equation, async (op: Operation, e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
+        await new Promise(f => setTimeout(f, 500));
+        return this.apply(op, e, arg);
+      });
   }
 
   public isValid(): boolean {
@@ -327,6 +345,7 @@ function latex(expression: BoxedExpression) {
 function renderLatex(tex: string) {
   tex = tex.replace(/\\exponentialE/g, "e");
   tex = tex.replace(/\\exp\(([^()]*)\)/g, "e^{$1}");
+  tex = tex.replace(/\\\//g, "/");
   return html`${unsafeHTML(katex.renderToString(tex, { output: "html", strict: false, throwOnError: false, trust: true, displayMode: true }))}`;
 }
 const assert = (assertion: boolean, message?: string, params?: any[]) => {
@@ -401,20 +420,51 @@ const SQRT: Operation = { name: "sqrt", title: "√", help: "Äquivalenzumformun
     const left = ce.box(["Sqrt", e.left]).simplify();
     const right = ce.box(["Sqrt", e.right]).simplify();
 
-    return left.N().isImaginary || right.N().isImaginary
-      ? error(e, "In ℝ ist die Wurzel einer negativen Zahl nicht definiert!")
-      : [{
+    if (left.N().isImaginary || right.N().isImaginary)
+      return error(e, "In ℝ ist die Wurzel einer negativen Zahl nicht definiert!");
+
+    let result: Equation[] = [{
       variable: e.variable,
       left: left,
-      right: right,
-    }, {
+      right: right.simplify(),
+    }];
+    if (!e.right.isZero)
+      result.push({
       variable: e.variable,
       left: left,
       right: ce.box(["Negate", right]).simplify(),
-    }]
+    })
+    return result;
   },
   render: (arg?: BoxedExpression): TemplateResult => {
     return html`|&nbsp;&nbsp;${renderLatex("\\sqrt{}")}`
+  }
+};
+const ROOT: Operation = { name: "root", title: "`\\sqrt{n}{}`", help: "Äquivalenzumformung: Auf beiden Seiten die n-te Wurzel ziehen", arg: true,
+  func: (e: Equation, arg?: BoxedExpression): Equation[] => {
+    assert(arg !== undefined);
+
+    const left = ce.box(["Root", e.left, arg!]).simplify();
+    const right = ce.box(["Root", e.right, arg!]).simplify();
+
+    if (left.N().isImaginary || right.N().isImaginary)
+      return error(e, "In ℝ ist die gerade Wurzel einer negativen Zahl nicht definiert!");
+
+    let result: Equation[] = [{
+      variable: e.variable,
+      left: left,
+      right: right.simplify(),
+    }];
+    if (Math.round(arg!.numericValue as number/2) === arg!.numericValue as number/2)
+    result.push({
+      variable: e.variable,
+      left: left,
+      right: ce.box(["Negate", right]).simplify(),
+    });
+    return result;
+  },
+  render: (arg?: BoxedExpression): TemplateResult => {
+    return html`|&nbsp;&nbsp;${latex(ce.box(["Root", ce.parse("\\text{}"), arg!]))}`
   }
 };
 const SQUARE: Operation = { name: "square", title: "`\\square^2`", help: "Äquivalenzumformung: Beide Seiten quadrieren", arg: false,
@@ -567,12 +617,12 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
     return [{
       variable: e.variable,
       left: ce.box(e.variable),
-      right: minus.evaluate(),
+      right: minus.evaluate().simplify(),
       message: message
     }, {
       variable: e.variable,
       left: ce.box(e.variable),
-      right: plus.evaluate(),
+      right: plus.evaluate().simplify(),
       message: message
     }]
   },
@@ -589,11 +639,15 @@ const ZERO_PRODUCT: Operation = { name: "zero_product", title: "SvNP", help: "Ei
     if ((e.left.json as Array<any>)[0] !== "Multiply" && (e.right.json as Array<any>)[0] !== "Multiply")
       return error(e, "Eine Seite muss ein Produkt sein!")
 
-    let product = (e.left.json as Array<any>)[0] === "Multiply" ? e.left : e.right;
+    let product = e.left.head === "Multiply" ? e.left : e.right;
     let equations: Equation[] = [];
-    for (const factor of product.json as Array<any>) {
-      if ("Multiply" === factor)
-        continue;
+    for (let factor of product.ops!) {
+      //if ("Multiply" === factor.head)
+      //  continue;
+      if (!factor.has("x"))
+        continue
+      if (factor.head === "Power")
+        factor = factor.ops![0];
       equations.push({
         variable: "x",
         left: ce.box(factor),
@@ -637,7 +691,7 @@ const SIMPLIFY: Operation = { name: "simplify", title: "Vereinfache", help: "Ver
 };
 
 const operations: Operation[] = [
-  ADD, SUBTRACT, MULTIPLY, DIVIDE, SQRT, SQUARE, LN, EXP,
+  ADD, SUBTRACT, MULTIPLY, DIVIDE, SQRT, ROOT, SQUARE, LN, EXP,
   EXPAND, FACTORIZE, ZERO_PRODUCT, QUADRATIC_FORMULA, SUBSTITUTE, RESUBSTITUTE, NULL_FORM, SIMPLIFY
 ];
 
@@ -645,3 +699,146 @@ const sets: Map<string, string[]> = new Map([
   ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
   ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]]
 ]);
+
+function operation(name: string) {
+  return operations.find(o => o.name === name)!;
+}
+
+const STRATEGY_POLYNOMIALy: Strategy = {
+  name: "polynomial",
+  title: "",
+  help: "",
+  arg: false,
+  async apply(e, callback) {
+    if (!e.right.isEqual(ce.box(0))) {
+      let result = await callback((operation("subtract")), e, e.right);
+      e = result[0];
+    }
+    let min = 10;
+    e.left.getSubexpressions("Power").forEach(s => min = Math.min(min, s.ops![1].numericValue as number));
+    let result = await callback((operation("factorize")), e, ce.box(["Power", "x", min]));
+    e = result[0];
+    result = await callback((operation("zero_product")), e);
+    for (let equation of result) {
+      let match = equation.left.match(ce.box(["Add", "x", "_a"]));
+      if (match && match._a.isNotZero) {
+        await callback(operation("subtract"), equation, match._a);
+        continue;
+      }
+      match = equation.left.match(ce.box(["Add", ["Power", "x", "_n"], "_a"]));
+      if (match) {
+        if (match._a.isNotZero)
+          equation = (await callback(operation("subtract"), equation, match._a))[0];
+        equation = match._n.numericValue === 2 ? await (callback(operation("sqrt"), equation))[0] : (await callback(operation("root"), equation, match._n))[0];
+        continue;
+      }
+      match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"], "_c"]));
+      if (match) {
+        await callback(operation("quadratic_formula"), equation)
+        continue;
+      }
+    }
+  }
+}
+const STRATEGY_POLYNOMIAL: Strategy = {
+  name: "polynomial",
+  title: "",
+  help: "",
+  arg: false,
+  async apply(equation, callback) {
+    // terminal
+    if (equation.left.isEqual(ce.box("x")) && !equation.right.has("x"))
+      return;
+    // bring into null form
+    if (equation.right.isNotZero)
+      equation = (await callback(operation("subtract"), equation, equation.right))[0];
+
+    // zero product
+    if (equation.left.head == "Multiply") {
+      console.log(JSON.stringify(equation.left.json) + " is product");
+      let results = await callback(operation("zero_product"), equation);
+      for (let equation of results) {
+        this.apply(equation, callback);
+      }
+      return;
+    }
+    // linear
+    let match = equation.left.match(ce.box(["Add", ["Multiply", "_a", "x"], "_b"]));
+    if (match) {
+      console.log(JSON.stringify(equation.left.json) + " is linear");
+      if (match!._b.isNotZero)
+        equation = (await callback(operation("subtract"), equation, match!._b))[0];
+      if (!match!._a.isOne)
+        equation = (await callback(operation("divide"), equation, match!._a))[0];
+      return;
+    }
+    // maybe factorize
+    if (equation.left.head === "Add" && equation.right.isZero) {
+      let min = 512;
+      equation.left.ops?.forEach(o => {
+        if (o.head === "Negate")
+          o = o.ops![0];
+        if (o.head === "Multiply")
+          o = o.ops![1];
+        if (o.head === "Symbol" && o.has("x"))
+          min = 1;
+        else if (o.head === "Power")
+          min = Math.min(min, o.ops![1].numericValue as number);
+        else
+          min = -1;
+      })
+      if (min != -1) {
+        let result = await callback((operation("factorize")), equation, ce.box(["Power", "x", min]));
+        this.apply(result[0], callback);
+        return;
+      }
+    }
+
+    // power equation
+    match = equation.left.match(ce.box(["Add", ["Multiply", "_a", ["Power", "x", "_n"]], "_b"]));
+    if (match) {
+      console.log(JSON.stringify(equation.left.json) + " is power");
+      if (match!._b.isNotZero)
+        equation = (await callback(operation("subtract"), equation, match!._b))[0];
+      if (!match!._a.isOne)
+        equation = (await callback(operation("divide"), equation, match!._a))[0];
+
+      equation = (match!._n.numericValue === 2 ? await callback(operation("sqrt"), equation) : await callback(operation("root"), equation, match!._n))[0];
+      return;
+    }
+    // quadratic
+    match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "2"], "_a"], ["Multiply", equation.variable, "_b"], "_c"]));
+    if (match) {
+      console.log(JSON.stringify(equation.left.json) + " is quadratic");
+      let results = await callback(operation("quadratic_formula"), equation);
+      return;
+    }
+    // biquadratic
+    let s = 2;
+    match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "4"], "_a"], ["Multiply", ["Power", equation.variable, "2"], "_b"], "_c"]));
+    if (!match) {
+      s = 3;
+      match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "6"], "_a"], ["Multiply", ["Power", equation.variable, "3"], "_b"], "_c"]));
+    }
+    if (!match) {
+      s = 4;
+      match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "8"], "_a"], ["Multiply", ["Power", equation.variable, "4"], "_b"], "_c"]));
+    }
+    if (match && match._c.isNotZero) {
+      console.log(JSON.stringify(equation.left.json) + " is biquadratic " + s);
+      equation = (await callback(operation("substitute"), equation, ce.box(["Power", "x", s])))[0];
+      let results = await callback(operation("quadratic_formula"), equation);
+      equation = (await callback(operation("resubstitute"), results[0]))[0];
+      this.apply(equation, callback);
+      equation = (await callback(operation("resubstitute"), results[1]))[0];
+      this.apply(equation, callback);
+      return;
+    }
+  }
+}
+
+const strategies: Strategy[] = [ STRATEGY_POLYNOMIAL ];
+
+function strategy(name: string) {
+  return strategies.find(o => o.name === name)!;
+}

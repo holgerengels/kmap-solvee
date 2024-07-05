@@ -17,10 +17,12 @@
     import '../dist/src/kmap-solvee.js';
 </script>
   <div id="demo">
-    <kmap-solvee operations="exponential, exp, null_form">e^x+e^{2x}=e</kmap-solvee>
-    <kmap-solvee operations="polynomial, square" solutions="\sqrt{7}, -\sqrt{7}, -1, 1">x^4-8x^2+7=0</kmap-solvee>
-    <kmap-solvee operations="polynomial, square">(x+2)(x+1)^2x=0</kmap-solvee>
-    <kmap-solvee operations="polynomial, square" solutions="-1,0,1" hints='[
+    <!--kmap-solvee operations="exponential, exp, null_form">e^x+e^{2x}=e</kmap-solvee>
+    <kmap-solvee operations="polynomial, square" solutions="\sqrt{7}, -\sqrt{7}, -1, 1">x^4-8x^2+7=0</kmap-solvee-->
+    <kmap-solvee operations="polynomial, square" solutions="\sqrt{7}, -\sqrt{7}, -1, 1" strategy="polynomial">x^4+8x^3-2x^2=0</kmap-solvee>
+    <kmap-solvee operations="polynomial, square" solutions="\sqrt{7}, -\sqrt{7}, -1, 1" strategy="polynomial">x^5-8x^3-x=0</kmap-solvee>
+    <kmap-solvee operations="polynomial, square" strategy="polynomial">\frac{1}{2}(x+2)(x+1)^2x=0</kmap-solvee>
+    <kmap-solvee operations="polynomial, square" solutions="-1,0,1" strategy="polynomial" hints='[
       {
         "match": "_x^4+_x^2=0",
         "operation": "substitute",
