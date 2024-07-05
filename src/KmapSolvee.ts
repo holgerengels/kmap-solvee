@@ -94,6 +94,12 @@ export class KmapSolvee extends LitElement {
       border-color: #0288d1;
       background-color: #E1ECF4;
     }
+    span[faded] {
+      opacity: 0;
+    }
+    span:not([faded]) {
+      transition: opacity 0.7s ease-in-out;
+    }
     span.e, span.o {
       display: inline-flex;
       align-items: center;
@@ -183,15 +189,12 @@ export class KmapSolvee extends LitElement {
     }
   }
 
-  /*
   protected updated(_changedProperties: PropertyValues) {
-    if (_changedProperties.has("solutions")) {
-      this.valid = compareArrays(this.expectedSolutions, this.solutions);
-      console.log(this.valid)
-      console.log(ce.box(["Equal","L_doublestruck", ["Delimiter", ["Set", ...this.solutions], ";"]]).latex)
-    }
+      let els = this.shadowRoot.querySelectorAll("[faded]");
+      setTimeout(function () {
+        els.forEach(e => e.removeAttribute("faded"))
+      });
   }
-   */
 
   updateSlotted({target}) {
     let content = target.assignedNodes().map((n) => n.textContent).join('');
@@ -202,6 +205,7 @@ export class KmapSolvee extends LitElement {
     }
   }
 
+  /*
   protected async firstUpdated() {
     console.log("lala")
     json(ce.box(["Divide",["Add",["Multiply",-6,["Sqrt",2]],-8],2]).simplify(), true)
@@ -210,6 +214,7 @@ export class KmapSolvee extends LitElement {
     //json(ce.parse("ee^xe^{-x}").simplify())
     //json(ce.box(["Expand", ce.parse("(x+2)(x+1)^2x")]).evaluate(), true)
   }
+   */
 
   apply(op: Operation, e: Equation, arg?: BoxedExpression) {
     console.assert(e)
@@ -270,8 +275,8 @@ export class KmapSolvee extends LitElement {
   renderEquation(e: Equation): TemplateResult {
     return html`
       <div class="block">
-        ${e.error ? html`<span class="err">${e.error}</span>` : html`
-        <span class="eq" role="button" aria-pressed="${this.selected === e}" @click="${() => this.select(e)}">
+        ${e.error ? html`<span class="err" faded>${e.error}</span>` : html`
+        <span class="eq" faded role="button" aria-pressed="${this.selected === e}" @click="${() => this.select(e)}">
           <span class="e">${latex(e.left)}&nbsp;=&nbsp;${latex(e.right)}</span>
           ${e.operation ? html`<span class="o">${e.operation.render(e.arg)}</span>` : undefined}
         </span>
@@ -288,7 +293,7 @@ export class KmapSolvee extends LitElement {
     return html`
       <span class="op" title="${o.help}">
         <button @click="${() => this.perform(o)}">${o.title.match(/`.*`/) ? renderLatex(o.title.substring(1, o.title.length-1)) : o.title}</button>
-      ${o.arg ? html`<input id="${"i_" + o.name}" type="text" size="2" @keydown="${(e) => { if (e.code === "Enter") this.perform(o)}}">` : undefined}
+      ${o.arg ? html`<input id="${"i_" + o.name}" type="text" size="2" autocomplete="off" @keydown="${(e) => { if (e.code === "Enter") this.perform(o)}}">` : undefined}
       </span>
     `;
   }
@@ -308,7 +313,7 @@ export class KmapSolvee extends LitElement {
         <span class="sols">${latex(this.solutions.length ? ce.box(["Equal","L_doublestruck", ["Delimiter", ["Set", ...this.solutions], ";"]]) : ce.box(["Equal","L_doublestruck", ["Set", ce.parse("\\text{...}")]]))}</span>
       </div>
       <div class="eqs">
-        ${Array.from(this.messages).map(m => html`<span class="msg">${m}</span>`)}
+        ${Array.from(this.messages).map(m => html`<span class="msg" faded>${m}</span>`)}
       </div>
     `;
   }
