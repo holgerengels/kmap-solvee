@@ -18,7 +18,7 @@ npm i kmap-solvee
 
 ## Usage without build (load directly from cdn)
 
-(no installation required)
+No installation required. Find a complete example webpage [here](https://github.com/holgerengels/kmap-solvee/blob/main/demo/cdn.html).
 
 ```html
 <script type="module">
