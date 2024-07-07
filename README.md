@@ -1,51 +1,38 @@
 # \<kmap-solvee>
 
-This webcomponent follows the [open-wc](https://github.com/open-wc/open-wc) recommendation.
-
 ## Installation
 
 ```bash
 npm i kmap-solvee
 ```
 
-## Usage
+## Usage with build
 
 ```html
 <script type="module">
   import 'kmap-solvee/kmap-solvee.js';
 </script>
 
-<kmap-solvee operations="exponential, exp, null_form">e^x+e^{2x}=e</kmap-solvee>
+<kmap-solvee operations="exponential">e^x+e^{2x}=e</kmap-solvee>
 ```
 
-## Linting and formatting
+## Usage without build (load directly from cdn)
 
-To scan the project for linting and formatting errors, run
+(no installation required)
 
-```bash
-npm run lint
+```html
+<script type="module">
+  import {KmapSolvee} from 'https://cdn.jsdelivr.net/npm/kmap-solvee@0.9.5/+esm'
+  window.customElements.define('kmap-solvee', KmapSolvee);
+</script>
+
+<kmap-solvee operations="polynomial" solutions="-1,0,1" strategy="polynomial" hints='[
+      {
+        "match": "_x^4+_x^2=0",
+        "operation": "substitute",
+        "message": "Kann man mit Substitution lösen, schneller gehts mit x² Ausklammern und dem Satz vom Nullprodukt"
+      }]'>2x^4-2x^2=0</kmap-solvee>
 ```
-
-To automatically fix linting and formatting errors, run
-
-```bash
-npm run format
-```
-
-## Demoing with Storybook
-
-To run a local instance of Storybook for your component, run
-
-```bash
-npm run storybook
-```
-
-To build a production version of Storybook, run
-
-```bash
-npm run storybook:build
-```
-
 
 ## Tooling configs
 

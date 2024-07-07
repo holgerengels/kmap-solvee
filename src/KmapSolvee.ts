@@ -74,6 +74,7 @@ export class KmapSolvee extends LitElement {
       margin: 4px;
       padding: 8px;
       border-radius: 8px;
+      align-content: center;
       transition: background-color ease-in-out .1s, border-color ease-in-out 0.1s;
     }
     span.eq {
@@ -120,12 +121,14 @@ export class KmapSolvee extends LitElement {
     }
     span.op input {
       border: 1px solid lightgray;
+      width: 2em;
     }
     span.op button {
       border: none;
       background-color: transparent;
       font-family: unset;
       font-weight: 500;
+      font-size: unset;
     }
   `,
   katexStyles];
@@ -261,7 +264,7 @@ export class KmapSolvee extends LitElement {
   }
 
   private log(eqs: Equation[]) {
-    eqs.forEach(e => console.log(JSON.stringify(e.left.json) + " = " + JSON.stringify(e.right.json)));
+    if (LOGGING) eqs.forEach(e => console.log(JSON.stringify(e.left.json) + " = " + JSON.stringify(e.right.json)));
   }
 
   select(e: Equation) {
@@ -293,7 +296,7 @@ export class KmapSolvee extends LitElement {
     return html`
       <span class="op" title="${o.help}">
         <button @click="${() => this.perform(o)}">${o.title.match(/`.*`/) ? renderLatex(o.title.substring(1, o.title.length-1)) : o.title}</button>
-      ${o.arg ? html`<input id="${"i_" + o.name}" type="text" size="2" autocomplete="off" @keydown="${(e) => { if (e.code === "Enter") this.perform(o)}}">` : undefined}
+      ${o.arg ? html`<input id="${"i_" + o.name}" type="text" size="3" autocomplete="off" autocapitalize="off" onblur="this.value=this.value.toLowerCase()" @keydown="${(e) => { if (e.code === "Enter") this.perform(o)}}">` : undefined}
       </span>
     `;
   }
@@ -310,7 +313,7 @@ export class KmapSolvee extends LitElement {
         ${this.equation ? html`${this.renderEquation(this.equation)}` : ``}
       </div>
       <div class="eqs">
-        <span class="sols">${latex(this.solutions.length ? ce.box(["Equal","L_doublestruck", ["Delimiter", ["Set", ...this.solutions], ";"]]) : ce.box(["Equal","L_doublestruck", ["Set", ce.parse("\\text{...}")]]))}</span>
+        <span class="sols">${latex(this.solutions.length ? ce.box(["Equal","L_doublestruck", ["Set", ...this.solutions]]) : ce.box(["Equal","L_doublestruck", ["Set", ce.parse("\\text{...}")]]))}</span>
       </div>
       <div class="eqs">
         ${Array.from(this.messages).map(m => html`<span class="msg" faded>${m}</span>`)}
@@ -419,7 +422,7 @@ const DIVIDE: Operation = { name: "divide", title: "：", help: "Äquivalenzumfo
     return html`|&nbsp;&nbsp;:&nbsp;${latex(ce.box(arg!))}`
   }
 };
-const SQRT: Operation = { name: "sqrt", title: "√", help: "Äquivalenzumformung: Auf beiden Seiten die Wurzelfunktion anwenden", arg: false,
+const SQRT: Operation = { name: "sqrt", title: "`\\sqrt{\\text{ }}`", help: "Äquivalenzumformung: Auf beiden Seiten die Wurzelfunktion anwenden", arg: false,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
     const left = ce.box(["Sqrt", e.left]).simplify();
@@ -445,7 +448,7 @@ const SQRT: Operation = { name: "sqrt", title: "√", help: "Äquivalenzumformun
     return html`|&nbsp;&nbsp;${renderLatex("\\sqrt{}")}`
   }
 };
-const ROOT: Operation = { name: "root", title: "`\\sqrt{n}{}`", help: "Äquivalenzumformung: Auf beiden Seiten die n-te Wurzel ziehen", arg: true,
+const ROOT: Operation = { name: "root", title: "`\\sqrt[n]{\\text{ }}`", help: "Äquivalenzumformung: Auf beiden Seiten die n-te Wurzel ziehen", arg: true,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(arg !== undefined);
 
@@ -702,7 +705,8 @@ const operations: Operation[] = [
 
 const sets: Map<string, string[]> = new Map([
   ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
-  ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]]
+  ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
+  ['polynomial-root', ["add", "subtract", "multiply", "divide", "root", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]]
 ]);
 
 function operation(name: string) {

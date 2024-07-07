@@ -1,6 +1,6 @@
 {
   "name": "kmap-solvee",
-  "version": "0.9.4",
+  "version": "0.9.6",
   "description": "Interactively solve mathematical equations",
   "license": "MIT",
   "author": "Holger Engels",
@@ -23,8 +23,7 @@
   "main": "dist/src/index.js",
   "module": "dist/src/index.js",
   "exports": {
-    ".": "./dist/src/index.js",
-    "./kmap-solvee.js": "./dist/src/kmap-solvee.js"
+    ".": "./dist/src/index.js"
   },
   "scripts": {
     "start": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"wds\"",
