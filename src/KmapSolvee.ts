@@ -122,6 +122,7 @@ export class KmapSolvee extends LitElement {
     span.op input {
       border: 1px solid lightgray;
       width: 2em;
+      text-transform: lowercase;
     }
     span.op button {
       border: none;
@@ -399,11 +400,17 @@ const SUBTRACT: Operation = { name: "subtract", title: "−", help: "Äquivalenz
 const MULTIPLY: Operation = { name: "multiply", title: "•", help: "Äquivalenzumformung: Beide Seiten mit dem Ausdruck multiplizieren", arg: true,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(arg !== undefined);
-    return [{
-      variable: e.variable,
-      left: ce.box(["Multiply", e.left, ce.box(arg!)]).simplify(),
-      right: ce.box(["Multiply", e.right, ce.box(arg!)]).simplify()
-    }]
+    if (arg!.isZero)
+      return error(e, "Beide Seiten mit 0 multiplizieren ist nicht erlaubt!");
+    let sols = ce.box(["Equal", arg!, 0]).solve("x");
+    if (sols && sols?.length != 0)
+      return error(e, "Multiplizieren mit einen Term, der 0 werden kann, ist nicht erlaubt!");
+    else
+      return [{
+        variable: e.variable,
+        left: ce.box(["Multiply", e.left, ce.box(arg!)]).simplify(),
+        right: ce.box(["Multiply", e.right, ce.box(arg!)]).simplify()
+      }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
     return html`|&nbsp;&nbsp;·&nbsp;${latex(ce.box(arg!))}`
@@ -412,11 +419,17 @@ const MULTIPLY: Operation = { name: "multiply", title: "•", help: "Äquivalenz
 const DIVIDE: Operation = { name: "divide", title: "：", help: "Äquivalenzumformung: Auf beiden Seiten durch den Ausdruck dividieren", arg: true,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(arg !== undefined);
-    return [{
-      variable: e.variable,
-      left: ce.box(["Divide", e.left, ce.box(arg!)]).simplify(),
-      right: ce.box(["Divide", e.right, ce.box(arg!)]).simplify()
-    }]
+    if (arg!.isZero)
+      return error(e, "Durch 0 teilen ist nicht definiert!");
+    let sols = ce.box(["Equal", arg!, 0]).solve("x");
+    if (sols && sols?.length != 0)
+      return error(e, "Teilen durch einen Term, der 0 werden kann, ist nicht erlaubt!");
+    else
+      return [{
+        variable: e.variable,
+        left: ce.box(["Divide", e.left, ce.box(arg!)]).simplify(),
+        right: ce.box(["Divide", e.right, ce.box(arg!)]).simplify()
+      }];
   },
   render: (arg?: BoxedExpression): TemplateResult => {
     return html`|&nbsp;&nbsp;:&nbsp;${latex(ce.box(arg!))}`
