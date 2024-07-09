@@ -167,7 +167,8 @@ export class KmapSolvee extends LitElement {
   @state()
   private solutions: BoxedExpression[] = [];
 
-  private valid: boolean = true;
+  @property({reflect: true, type: Boolean})
+  private valid: boolean = false;
 
   @state()
   private messages = new Set();
@@ -189,15 +190,16 @@ export class KmapSolvee extends LitElement {
         const expected: BoxedExpression[] = [];
         this.solutionTex.split(",").forEach(n => {expected.push(ce.parse(n))})
         this.expectedSolutions = Array.from(new Set(expected)).sort(NUMERIC_COMPARISION);
+        console.log(this.expectedSolutions)
       }
     }
   }
 
   protected updated(_changedProperties: PropertyValues) {
-      let els = this.shadowRoot.querySelectorAll("[faded]");
-      setTimeout(function () {
-        els.forEach(e => e.removeAttribute("faded"))
-      });
+    let els = this.shadowRoot.querySelectorAll("[faded]");
+    setTimeout(function () {
+      els.forEach(e => e.removeAttribute("faded"))
+    });
   }
 
   updateSlotted({target}) {
@@ -240,6 +242,8 @@ export class KmapSolvee extends LitElement {
     });
     if (solutions.length > 0)
       this.solutions = Array.from(new Set([...this.solutions, ...solutions])).sort(NUMERIC_COMPARISION);
+
+    this.valid = compareArrays(this.solutions, this.expectedSolutions);
 
     if (e.message) {
       this.messages.add(e.message);
