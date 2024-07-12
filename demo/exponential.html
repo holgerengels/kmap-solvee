@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <title>Solvee Equation Trainer</title>
+  <meta charset="utf-8">
+  <style>
+    body { background: #fafafa; font-family: sans-serif; }
+    :not(:defined) { display: none }
+  </style>
+</head>
+<body>
+<script type="module">
+  import '../dist/src/kmap-solvee.js';
+</script>
+<kmap-solvee operations="exponential" solutions="" strategy="exponential">e^x+e^{2x}=0</kmap-solvee>
+<kmap-solvee operations="exponential" solutions="" strategy="exponential">3^{2x}-10\cdot3^x+9=0</kmap-solvee>
+<kmap-solvee operations="exponential" solutions="" strategy="exponential">-ee^{-x} + 1 + e^x = 0</kmap-solvee>
+<kmap-solvee operations="polynomial, square" strategy="polynomial" solutions="-2,-1,0" hints='[
+      {
+        "match": "(x+2)(x+1)^2x=0",
+        "operation": "expand",
+        "message": "Ausmultiplizieren ist nur selten eine gute Strategie. Hier führt es in eine Sackgasse!"
+      }]'>(x+2)(x+1)^2x=0</kmap-solvee>
+</body>
+</html>

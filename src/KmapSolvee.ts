@@ -8,10 +8,13 @@ import {katexStyles} from "./katex-css.js";
 const LOGGING = false;
 
 const ce = new ComputeEngine();
+const boxed_0 = ce.box(0);
+
 const latexOptions = {
   decimalMarker: "{,}",
   groupSeparator: "",
-  imaginaryUnit: "\\operatorname{i}"
+  imaginaryUnit: "\\operatorname{i}",
+  invisiblePlus: "+"
 }
 
 interface Equation {
@@ -69,9 +72,10 @@ export class KmapSolvee extends LitElement {
     div.eqs {
       display: flex;
       flex-flow: row wrap;
+      gap: 4px;
+      margin: 4px 0px;
     }
     span.eq, span.err, span.op, span.sols, span.msg {
-      margin: 4px;
       padding: 8px;
       border-radius: 8px;
       align-content: center;
@@ -110,6 +114,8 @@ export class KmapSolvee extends LitElement {
     div.ops {
       display: flex;
       flex-flow: row wrap;
+      gap: 4px;
+      margin: 4px 0px;
     }
     span.op {
       border: 1px solid #5eb8ff;
@@ -190,7 +196,6 @@ export class KmapSolvee extends LitElement {
         const expected: BoxedExpression[] = [];
         this.solutionTex.split(",").forEach(n => {expected.push(ce.parse(n))})
         this.expectedSolutions = Array.from(new Set(expected)).sort(NUMERIC_COMPARISION);
-        console.log(this.expectedSolutions)
       }
     }
   }
@@ -236,17 +241,20 @@ export class KmapSolvee extends LitElement {
     this.requestUpdate();
     this.log(results);
     let solutions: BoxedExpression[] = [];
+    let messages: string[] = [];
     results.forEach(r => {
       if (r.left.isEqual(ce.box("x")) && r.right.isNumber)
         solutions.push(r.right)
+      if (r.message)
+        messages.push(r.message);
     });
     if (solutions.length > 0)
       this.solutions = Array.from(new Set([...this.solutions, ...solutions])).sort(NUMERIC_COMPARISION);
 
     this.valid = compareArrays(this.solutions, this.expectedSolutions);
 
-    if (e.message) {
-      this.messages.add(e.message);
+    if (messages.length) {
+      messages.forEach(m => this.messages.add(m))
       this.requestUpdate("messages");
     }
     for (const hint of this.hints) {
@@ -283,7 +291,7 @@ export class KmapSolvee extends LitElement {
   renderEquation(e: Equation): TemplateResult {
     return html`
       <div class="block">
-        ${e.error ? html`<span class="err" faded>${e.error}</span>` : html`
+        ${e.error ? html`<span class="err" faded>${e.error.match(/`.*`/) ? renderLatex(e.error.substring(1, e.error.length-1)) : e.error}</span>` : html`
         <span class="eq" faded role="button" aria-pressed="${this.selected === e}" @click="${() => this.select(e)}">
           <span class="e">${latex(e.left)}&nbsp;=&nbsp;${latex(e.right)}</span>
           ${e.operation ? html`<span class="o">${e.operation.render(e.arg)}</span>` : undefined}
@@ -611,6 +619,12 @@ const RESUBSTITUTE: Operation = { name: "resubstitute", title: "Resubst", help: 
 const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", help: "Für Gleichungen der Form ax²+bx+c=0", arg: false,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
+
+    let max = 0;
+    e.left.getSubexpressions("Power").forEach(s => max = Math.max(max, s.ops![1].numericValue as number));
+    if (max > 2)
+      return error(e, "Die Mitternachtsformel kann nur auf Polynomgleichungen vom Grad 2 angewandt werden");
+
     const quadraticForm = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"], "_c"]);
     const quadraticForm2 = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", e.variable, "_b"]]);
     const quadraticForm3 = ce.box(["Add", ["Multiply", ["Power", e.variable, "2"], "_a"], ["Multiply", "_c"]]);
@@ -625,31 +639,44 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
     let message;
     if (match === null) {
       match = e.left.match(quadraticForm2);
-      message = "Kann man MNF lösen, schneller geht's mit x Ausklammern und SvNP";
+      message = "Kann man mit MNF lösen, schneller geht's mit x Ausklammern und SvNP";
     }
     if (match === null) {
       match = e.left.match(quadraticForm3);
-      message = "Kann man MNF lösen, schneller geht's mit Wurzel ziehen";
+      message = "Kann man mit MNF lösen, schneller geht's mit Wurzel ziehen";
     }
     if (match === null || e.right.isNotZero)
       return error(e, "Die Mitternachtsformel kann nur auf Gleichungen der Form ax²+bx+c=0 angewandt werden!");
 
     const a = match!._a;
-    const b = match!._b;
+    const b = match!._b || 0;
     const c = match!._c || 0;
-    let minus = ce.box(["Divide", ["Subtract", ["Negate", b], ["Sqrt", ["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]]], ["Multiply", 2, a]])
-    let plus = ce.box(["Divide", ["Add", ["Negate", b], ["Sqrt", ["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]]], ["Multiply", 2, a]])
-    return [{
-      variable: e.variable,
-      left: ce.box(e.variable),
-      right: minus.evaluate().simplify(),
-      message: message
-    }, {
-      variable: e.variable,
-      left: ce.box(e.variable),
-      right: plus.evaluate().simplify(),
-      message: message
-    }]
+    let minus = ce.box(["Divide", ["Subtract", ["Negate", b], ["Sqrt", ["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]]], ["Multiply", 2, a]]);
+    let plus = ce.box(["Divide", ["Add", ["Negate", b], ["Sqrt", ["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]]], ["Multiply", 2, a]]);
+
+    const term = ce.box(["Subtract", ["Power", b, 2], ["Multiply", 4, a, c]]);
+    const n = term.N();
+    if (n.isNegative)
+      return error({variable: 'x', left: term, right: boxed_0}, "`D = " + term.toLatex(latexOptions) + " < 0`");
+    else if (n.isZero)
+      return [{
+        variable: e.variable,
+        left: ce.box(e.variable),
+        right: minus.evaluate().simplify(),
+        message: message
+      }];
+    else
+      return [{
+        variable: e.variable,
+        left: ce.box(e.variable),
+        right: minus.evaluate().simplify(),
+        message: message
+      }, {
+        variable: e.variable,
+        left: ce.box(e.variable),
+        right: plus.evaluate().simplify(),
+        message: message
+      }];
   },
   render: (arg?: BoxedExpression): TemplateResult => {
     return html`||&nbsp;&nbsp;<i>MNF</i>`
@@ -659,7 +686,7 @@ const ZERO_PRODUCT: Operation = { name: "zero_product", title: "SvNP", help: "Ei
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
 
-    if (!e.left.isEqual(ce.box("0")) && !e.right.isEqual(ce.box("0")))
+    if (!e.left.isEqual(boxed_0) && !e.right.isEqual(boxed_0))
       return error(e, "Auf einer Seite muss null stehen!")
     if ((e.left.json as Array<any>)[0] !== "Multiply" && (e.right.json as Array<any>)[0] !== "Multiply")
       return error(e, "Eine Seite muss ein Produkt sein!")
@@ -676,7 +703,7 @@ const ZERO_PRODUCT: Operation = { name: "zero_product", title: "SvNP", help: "Ei
       equations.push({
         variable: "x",
         left: ce.box(factor),
-        right: ce.box("0")
+        right: boxed_0
       });
     }
     return equations;
@@ -693,7 +720,7 @@ const NULL_FORM: Operation = { name: "null_form", title: "Nullform", help: "In N
     return [{
       variable: e.variable,
       left: ce.box(["Subtract", e.left, e.right]).simplify(),
-      right: ce.box("0")
+      right: boxed_0
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
@@ -736,7 +763,7 @@ const STRATEGY_POLYNOMIALy: Strategy = {
   help: "",
   arg: false,
   async apply(e, callback) {
-    if (!e.right.isEqual(ce.box(0))) {
+    if (!e.right.isEqual(boxed_0)) {
       let result = await callback((operation("subtract")), e, e.right);
       e = result[0];
     }
