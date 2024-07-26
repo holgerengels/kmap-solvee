@@ -209,6 +209,7 @@ export class KmapSolvee extends LitElement {
 
   updateSlotted({target}) {
     let content = target.assignedNodes().map((n) => n.textContent).join('');
+    console.log(content)
     if (content) {
       let pos = content.indexOf('=')
       this.equation = { variable: "x", left: ce.parse(content.substring(0, pos))!, right: ce.parse(content.substring(pos+1))!}
@@ -639,7 +640,7 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
     let message;
     if (match === null) {
       match = e.left.match(quadraticForm2);
-      message = "Kann man mit MNF lösen, schneller geht's mit x Ausklammern und SvNP";
+      message = "Kann man mit MNF lösen, schneller geht's mit x Ausklammern und SVNP";
     }
     if (match === null) {
       match = e.left.match(quadraticForm3);
@@ -682,7 +683,7 @@ const QUADRATIC_FORMULA: Operation = { name: "quadratic_formula", title: "MNF", 
     return html`||&nbsp;&nbsp;<i>MNF</i>`
   }
 };
-const ZERO_PRODUCT: Operation = { name: "zero_product", title: "SvNP", help: "Eine Seite muss ein Produkt, die andere Null sein", arg: false,
+const ZERO_PRODUCT: Operation = { name: "zero_product", title: "SVNP", help: "Eine Seite muss ein Produkt, die andere Null sein", arg: false,
   func: (e: Equation, arg?: BoxedExpression): Equation[] => {
     assert(!arg);
 
