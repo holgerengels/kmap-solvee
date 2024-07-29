@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from 'lit';
-import {property, state} from 'lit/decorators.js';
+import {property, query, state} from 'lit/decorators.js';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {BoxedExpression, BoxedRule, BoxedSubstitution, ComputeEngine} from "@cortex-js/compute-engine";
 import katex from 'katex';
@@ -60,7 +60,20 @@ export class KmapSolvee extends LitElement {
     :host {
       display: flex;
       flex-flow: column;
+//      --elevation-00: 0px 0px 0px 0px rgba(0, 0, 0, 0.2), 0px 0px 0px 0px rgba(0, 0, 0, 0.14), 0px 0px 0px 0px rgba(0, 0, 0, 0.12);
+      --elevation-01: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+//      --elevation-02: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+      --elevation-03: 0px 3px 3px -2px rgba(0, 0, 0, 0.2), 0px 3px 4px 0px rgba(0, 0, 0, 0.14), 0px 1px 8px 0px rgba(0, 0, 0, 0.12);
+//      --elevation-04: 0px 2px 4px -1px rgba(0, 0, 0, 0.2), 0px 4px 5px 0px rgba(0, 0, 0, 0.14), 0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+//      --elevation-05: 0px 3px 5px -1px rgba(0, 0, 0, 0.2), 0px 5px 8px 0px rgba(0, 0, 0, 0.14), 0px 1px 14px 0px rgba(0, 0, 0, 0.12);
+//      --elevation-06: 0px 3px 5px -1px rgba(0, 0, 0, 0.2), 0px 6px 10px 0px rgba(0, 0, 0, 0.14), 0px 1px 18px 0px rgba(0, 0, 0, 0.12);
+//      --elevation-07: 0px 4px 5px -2px rgba(0, 0, 0, 0.2), 0px 7px 10px 1px rgba(0, 0, 0, 0.14), 0px 2px 16px 1px rgba(0, 0, 0, 0.12);
+//      --elevation-08: 0px 5px 5px -3px rgba(0, 0, 0, 0.2), 0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+//      --elevation-09: 0px 5px 6px -3px rgba(0, 0, 0, 0.2), 0px 9px 12px 1px rgba(0, 0, 0, 0.14), 0px 3px 16px 2px rgba(0, 0, 0, 0.12);
+//      --elevation-10: 0px 6px 6px -3px rgba(0, 0, 0, 0.2), 0px 10px 14px 1px rgba(0, 0, 0, 0.14), 0px 4px 18px 3px rgba(0, 0, 0, 0.12);
+//      --elevation-transition: box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     span.katex-display {
       margin: 0;
     }
@@ -75,34 +88,32 @@ export class KmapSolvee extends LitElement {
       gap: 4px;
       margin: 4px 0px;
     }
-    span.eq, span.err, span.op, span.sols, span.msg {
-      padding: 8px;
+    span.eq, span.err, span.op, div.args, span.sols, span.msg {
+      padding: 8px 16px;
       border-radius: 8px;
+      box-shadow: var(--elevation-01);
       align-content: center;
-      transition: background-color ease-in-out .1s, border-color ease-in-out 0.1s;
+      transition: background-color ease-in-out .1s;
     }
     span.eq {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border: 1px solid lightgray;
+      background-color: #fafafa;
     }
     span.err {
-      border: 1px solid firebrick;
       background-color: lightpink;
     }
     span.msg {
-      border: 1px solid #fbc02d;
       background-color: #fffac1;
     }
     span.eq[aria-pressed=true] {
-      border-color: #0288d1;
       background-color: #E1ECF4;
     }
-    span[faded] {
+    [faded] {
       opacity: 0;
     }
-    span:not([faded]) {
+    :not([faded]) {
       transition: opacity 0.7s ease-in-out;
     }
     span.e, span.o {
@@ -114,28 +125,45 @@ export class KmapSolvee extends LitElement {
     div.ops {
       display: flex;
       flex-flow: row wrap;
-      gap: 4px;
+      gap: 8px;
       margin: 4px 0px;
+      position: relative;
+    }
+    div.args {
+      position: absolute;
+      display: grid;
+      align-items: center;
+      grid-template-columns: min-content 1fr min-content;
+      width: 200px; height: 44px;
+      left: calc(50% - 100px); top: calc(50% - 22px);
+      font-weight: 500;
+      background-color: white;
+      box-shadow: var(--elevation-03);
     }
     span.op {
-      border: 1px solid #5eb8ff;
       font-weight: 500;
     }
     span.op:has(button:active) {
-      border: 1px solid #005b9f;
       background-color: #E1ECF4;
     }
-    span.op input {
-      border: 1px solid lightgray;
-      width: 2em;
+    div.args input {
       text-transform: lowercase;
+      border: 1px solid lightgray;
+      border-radius: 4px;
+      padding: 4px;
     }
-    span.op button {
+    div.args input:focus {
+      outline: none;
+    }
+    span.op button, div.args button {
       border: none;
       background-color: transparent;
       font-family: unset;
       font-weight: 500;
       font-size: unset;
+    }
+    [hidden] {
+      display: none!important;
     }
   `,
   katexStyles];
@@ -177,7 +205,22 @@ export class KmapSolvee extends LitElement {
   private valid: boolean = false;
 
   @state()
-  private messages = new Set();
+  private messages: string[] = [];
+
+  @state()
+  private argsVisible = false;
+  private currentOperation?: Operation;
+
+  @query('#i', true)
+  private ie!: HTMLInputElement;
+
+  private _animFrom?: DOMRect;
+  private _animTo?: DOMRect;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener('click', this.cancel)
+  }
 
   protected willUpdate(_changedProperties: PropertyValues) {
     if (_changedProperties.has("operationNames")) {
@@ -205,6 +248,11 @@ export class KmapSolvee extends LitElement {
     setTimeout(function () {
       els.forEach(e => e.removeAttribute("faded"))
     });
+    if (this.argsVisible)
+      this.ie.focus();
+    if (_changedProperties.has("argsVisible")) {
+
+    }
   }
 
   updateSlotted({target}) {
@@ -228,6 +276,10 @@ export class KmapSolvee extends LitElement {
   }
    */
 
+  _hover(e) {
+    this._animFrom = e.target.getBoundingClientRect();
+  }
+
   apply(op: Operation, e: Equation, arg?: BoxedExpression) {
     console.assert(e)
     console.assert(e.variable)
@@ -241,40 +293,88 @@ export class KmapSolvee extends LitElement {
     this.selected = e.derived[0];
     this.requestUpdate();
     this.log(results);
-    let solutions: BoxedExpression[] = [];
-    let messages: string[] = [];
-    results.forEach(r => {
-      if (r.left.isEqual(ce.box("x")) && r.right.isNumber)
-        solutions.push(r.right)
-      if (r.message)
-        messages.push(r.message);
-    });
-    if (solutions.length > 0)
-      this.solutions = Array.from(new Set([...this.solutions, ...solutions])).sort(NUMERIC_COMPARISION);
-
-    this.valid = compareArrays(this.solutions, this.expectedSolutions);
-
-    if (messages.length) {
-      messages.forEach(m => this.messages.add(m))
-      this.requestUpdate("messages");
-    }
-    for (const hint of this.hints) {
-    if (e.operation.name === hint.operation && ce.box(["Equal", e.left, e.right]).match(ce.parse(hint.match))) {
-        this.messages.add(hint.message);
-        this.requestUpdate("messages");
-      }
-    }
-
+    this.solutionsAndMessage(e);
     return results;
   }
 
-  private perform(o: Operation) {
+  private solutionsAndMessage(e: Equation) {
+    let solutions: BoxedExpression[] = [];
+    let messages: string[] = [];
+    this.gather(solutions, messages, this.equation);
+    this.solutions = solutions.sort(NUMERIC_COMPARISION);
+    this.messages = messages;
+    this.valid = compareArrays(this.solutions, this.expectedSolutions);
+  }
+
+  private gather(solutions: BoxedExpression[], messages: string[], equation: Equation) {
+    if (equation.left.isEqual(ce.box("x")) && equation.right.isNumber)
+      solutions.push(equation.right)
+    if (equation.message)
+      messages.push(equation.message);
+    for (const hint of this.hints) {
+      if (equation.operation?.name === hint.operation && ce.box(["Equal", equation.left, equation.right]).match(ce.parse(hint.match))) {
+        messages.push(hint.message);
+      }
+    }
+
+    equation.derived?.forEach(d => this.gather(solutions, messages, d))
+  }
+
+  private perform(o?: Operation) {
     if (!this.selected)
       return;
-    let ie = o.arg ? (this.shadowRoot!.getElementById("i_" + o.name) as HTMLInputElement) : undefined;
-    let arg= ie && ie.value && ie.value !== "" ? ce.parse(ie.value) : undefined;
-    this.apply(o, this.selected, arg);
-    if (ie) ie.value = "";
+    if (o && this.currentOperation) {
+      this.cancel()
+      return;
+    }
+    if (o?.arg) {
+      this.argsVisible = true;
+      this.currentOperation = o;
+
+      let that = this;
+      setTimeout(function () {
+        that._animTo = that.ie.closest("div")!.getBoundingClientRect();
+
+        console.log(that._animFrom)
+        console.log(that._animTo)
+        if (!that._animFrom)
+          return;
+
+        var invertTop = that._animFrom.top - that._animTo.top;
+        var invertLeft = that._animFrom.left - that._animTo.left;
+        var invertScale = that._animFrom.width / that._animTo.width;
+
+        var player = that.ie.closest("div")!.animate([{
+          transformOrigin: 'top left',
+          transform: `translate(${invertLeft}px, ${invertTop}px) scale(${invertScale}, ${invertScale})`,
+          opacity: 0.2
+        }, {
+          transformOrigin: 'top left', transform: 'none', opacity: 1
+        }], {
+          duration: 300,
+          easing: 'ease-in-out',
+          fill: 'both'
+        });
+        player.addEventListener('finish', function () {
+          that._animFrom = undefined;
+          that._animTo = undefined;
+        });
+      })
+    }
+    else {
+        if (!o) {
+        o = this.currentOperation!;
+        this.currentOperation = undefined;
+      }
+      this.argsVisible = false;
+      let arg = this.ie.value && this.ie.value !== "" ? ce.parse(this.ie.value) : undefined;
+      this.apply(o, this.selected, arg);
+      this.ie.value = "";
+    }
+  }
+  private cancel() {
+    this.currentOperation = undefined;
+    this.argsVisible = false;
   }
 
   private log(eqs: Equation[]) {
@@ -286,7 +386,7 @@ export class KmapSolvee extends LitElement {
     e.operation = undefined;
     e.arg = undefined;
     this.selected = e;
-    this.messages.clear();
+    this.solutionsAndMessage(e);
   }
 
   renderEquation(e: Equation): TemplateResult {
@@ -308,10 +408,27 @@ export class KmapSolvee extends LitElement {
 
   renderOperation(o: Operation): TemplateResult {
     return html`
-      <span class="op" title="${o.help}">
-        <button @click="${() => this.perform(o)}">${o.title.match(/`.*`/) ? renderLatex(o.title.substring(1, o.title.length-1)) : o.title}</button>
-      ${o.arg ? html`<input id="${"i_" + o.name}" type="text" size="3" autocomplete="off" autocapitalize="off" onblur="this.value=this.value.toLowerCase()" @keydown="${(e) => { if (e.code === "Enter") this.perform(o)}}">` : undefined}
+      <span class="op" title="${o.help}" @mouseenter="${this._hover}">
+        <button @click="${(e) => { e.stopPropagation(); this.perform(o)}}">${this.renderTitle(o)}</button>
       </span>
+    `;
+  }
+
+  renderTitle(o: Operation): TemplateResult {
+    return o.title.match(/`.*`/) ? renderLatex(o.title.substring(1, o.title.length-1)) : html`${o.title}`;
+  }
+
+  renderArgs(): TemplateResult {
+    return html`
+      <div class="args" ?hidden="${!this.argsVisible}" @click="${(e) => e.stopPropagation()}" faded>
+        ${this.currentOperation ? html`<span style="margin-right: 8px">${this.renderTitle(this.currentOperation)}</span>` : ''}
+        <input id="i" type="text" size="3" autocomplete="off" autocapitalize="off" onblur="this.value=this.value.toLowerCase()" @keydown="${(e) => {
+          switch (e.code) {
+            case "Enter": this.perform(); return
+            case "Escape": this.cancel(); return
+          }}}">
+        <button @click="${(e) => { e.stopPropagation(); this.perform()}}">⏎</button>
+      </div>
     `;
   }
 
@@ -322,6 +439,7 @@ export class KmapSolvee extends LitElement {
       </div>
       <div class="ops">
         ${this.operations.map(o => html`${this.renderOperation(o)}`)}
+        ${this.renderArgs()}
       </div>
       <div class="eqs">
         ${this.equation ? html`${this.renderEquation(this.equation)}` : ``}
@@ -339,7 +457,7 @@ export class KmapSolvee extends LitElement {
     this.equation = { variable: "x", left: this.equation!.left, right: this.equation!.right }
     this.selected = this.equation;
     this.solutions = [];
-    this.messages = new Set();
+    this.messages = [];
   }
 
   public bark() {

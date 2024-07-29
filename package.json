@@ -1,6 +1,6 @@
 {
   "name": "kmap-solvee",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "Interactively solve mathematical equations",
   "license": "MIT",
   "author": "Holger Engels",
