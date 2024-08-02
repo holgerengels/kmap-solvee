@@ -50,8 +50,10 @@
   },
   "dependencies": {
     "@cortex-js/compute-engine": "^0.25.1",
+    "lit": "^2.8.0",
     "katex": "^0.16.11",
-    "lit": "^2.8.0"
+    "jsxgraph": "^1.9.2",
+    "kmap-jsxgraph": "^0.9.23"
   },
   "prettier": {
     "singleQuote": true,

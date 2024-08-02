@@ -6,6 +6,7 @@
     "noEmitOnError": true,
     "lib": ["es2020", "dom", "dom.iterable", "scripthost"],
     "strict": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <title>Solvee Equation Trainer</title>
+  <meta charset="utf-8">
+  <style>
+    body { background: #fafafa; font-family: sans-serif; }
+    :not(:defined) { display: none }
+  </style>
+</head>
+<body>
+<script type="module">
+  import '../dist/src/kmap-solvee.js';
+</script>
+<kmap-solvee operations="trigonometrical" solutions="2\pi k- \frac{\pi}{3}, 2\pi k- \frac{2\pi}{3}" strategy="exponential">\sin(x)=-\frac{\sqrt{3}}{2}</kmap-solvee>
+<kmap-solvee operations="trigonometrical" solutions="2\pi k- \frac{\pi}{3}, 2\pi k- \frac{2\pi}{3}" strategy="exponential">\sin(x)=\frac{\sqrt{3}}{2}</kmap-solvee>
+<kmap-solvee operations="trigonometrical" solutions="2\pi k- \frac{\pi}{3}, 2\pi k- \frac{2\pi}{3}" strategy="exponential">\cos(x)=-\frac{\sqrt{3}}{2}</kmap-solvee>
+<kmap-solvee operations="trigonometrical" solutions="2\pi k- \frac{\pi}{3}, 2\pi k- \frac{2\pi}{3}" strategy="exponential">\cos(x)=\frac{\sqrt{3}}{2}</kmap-solvee>
+<kmap-solvee operations="trigonometrical" strategy="exponential">\sin(2x)=\frac{\sqrt{3}}{2}</kmap-solvee>
+</body>
+</html>
