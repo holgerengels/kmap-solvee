@@ -48,7 +48,7 @@ export class KmapSolvee extends LitElement {
       margin: 4px 0px;
     }
     span.eq, span.err, span.op, div.args, span.sols, span.msg {
-      padding: 8px 16px;
+      padding: 8px 12px;
       border-radius: 8px;
       box-shadow: var(--elevation-01);
       align-content: center;
@@ -78,7 +78,6 @@ export class KmapSolvee extends LitElement {
     span.e, span.o {
       display: inline-flex;
       align-items: center;
-      font-size: 1.21em;
       white-space: nowrap;
     }
     div.ops {
@@ -250,7 +249,8 @@ export class KmapSolvee extends LitElement {
     let results: Equation[] = await op.func(e, arg);
     results.forEach(d => d.former = e);
     e.derived = results;
-    this.selected = e.derived[0];
+    if (!e.derived[0].error)
+      this.selected = e.derived[0];
     this.requestUpdate();
     this.log(results);
     this.solutionsAndMessage(e);
@@ -352,7 +352,7 @@ export class KmapSolvee extends LitElement {
       <div class="block">
         ${e.error ? html`<span class="err" faded>${e.error.match(/`.*`/) ? renderLatex(e.error.substring(1, e.error.length-1)) : e.error}</span>` : html`
         <span class="eq" faded role="button" aria-pressed="${this.selected === e}" @click="${() => this.select(e)}">
-          <span class="e">${latex(e.left)}&nbsp;=&nbsp;${latex(e.right)}</span>
+          <span class="e">${latex(ce.box(["Equal", e.left, e.right]))}</span>
           ${e.operation ? html`<span class="o">${e.operation.render(e.arg)}</span>` : undefined}
         </span>
         ${e.derived && e.derived.length ? html`
@@ -392,7 +392,7 @@ export class KmapSolvee extends LitElement {
         ${this.currentOperation ? html`<span style="margin-right: 8px; display: flex">${(this.renderMixed(this.currentOperation.title))}</span>` : ''}
         <input id="i" type="text" size="3" autocomplete="off" autocapitalize="off" onblur="this.value=this.value.toLowerCase()" @keydown="${(e) => {
           switch (e.code) {
-            case "Enter": this.perform(); return
+            case "Enter": case "NumpadEnter": this.perform(); return
             case "Escape": this.cancel(); return
           }}}">
         <button @click="${(e) => { e.stopPropagation(); this.perform()}}">⏎</button>

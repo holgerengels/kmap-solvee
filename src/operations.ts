@@ -6,35 +6,39 @@ import katex from "katex";
 window.katex = katex;
 
 const ADD: Operation = {
-  name: "add", title: "`+\\square`", help: "Äquivalenzumformung: Auf beiden Seiten den Ausdruck addieren", arg: true,
+  name: "add", title: "`+`", help: "Äquivalenzumformung: Auf beiden Seiten den Ausdruck addieren", arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
     return [{
       variable: e.variable,
-      left: ce.box(["Add", e.left, ce.box(arg!)]).simplify(),
-      right: ce.box(["Add", e.right, ce.box(arg!)]).simplify()
+      left: ce.box(["Add", e.left, arg!]).simplify(),
+      right: ce.box(["Add", e.right, arg!]).simplify()
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;+&nbsp;${latex(ce.box(arg!))}`
+    return arg && arg.isNegative
+      ? html`|&nbsp;&nbsp;${latex(arg!)}`
+      : html`|&nbsp;&nbsp;+&nbsp;${latex(arg!)}`
   }
 };
 const SUBTRACT: Operation = {
-  name: "subtract", title: "`−\\square`", help: "Äquivalenzumformung: Auf beiden Seiten den Ausdruck subtrahieren", arg: true,
+  name: "subtract", title: "`−`", help: "Äquivalenzumformung: Auf beiden Seiten den Ausdruck subtrahieren", arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
     return [{
       variable: e.variable,
-      left: ce.box(["Subtract", e.left, ce.box(arg!)]).simplify(),
-      right: ce.box(["Subtract", e.right, ce.box(arg!)]).simplify()
+      left: ce.box(["Subtract", e.left, arg!]).simplify(),
+      right: ce.box(["Subtract", e.right, arg!]).simplify()
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${latex(ce.box(["Negate", arg!]))}`
+    return arg && arg.isNegative
+      ? html`|&nbsp;&nbsp;+&nbsp;${latex(ce.box(["Negate", arg!]))}`
+      : html`|&nbsp;&nbsp;−&nbsp;${latex(arg!)}`
   }
 };
 const MULTIPLY: Operation = {
-  name: "multiply", title: "`\\cdot \\square`", help: "Äquivalenzumformung: Beide Seiten mit dem Ausdruck multiplizieren", arg: true,
+  name: "multiply", title: "`\\cdot`", help: "Äquivalenzumformung: Beide Seiten mit dem Ausdruck multiplizieren", arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
     if (arg!.isZero)
@@ -45,16 +49,16 @@ const MULTIPLY: Operation = {
     else
       return [{
         variable: e.variable,
-        left: ce.box(["Multiply", e.left, ce.box(arg!)]).simplify(),
-        right: ce.box(["Multiply", e.right, ce.box(arg!)]).simplify()
+        left: ce.box(["Multiply", e.left, arg!]).simplify(),
+        right: ce.box(["Multiply", e.right, arg!]).simplify()
       }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;·&nbsp;${latex(ce.box(arg!))}`
+    return html`|&nbsp;&nbsp;·&nbsp;${latex(arg!)}`
   }
 };
 const DIVIDE: Operation = {
-  name: "divide", title: "`:\\square`", help: "Äquivalenzumformung: Auf beiden Seiten durch den Ausdruck dividieren", arg: true,
+  name: "divide", title: "`:`", help: "Äquivalenzumformung: Auf beiden Seiten durch den Ausdruck dividieren", arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
     if (arg!.isZero)
@@ -65,12 +69,12 @@ const DIVIDE: Operation = {
     else
       return [{
         variable: e.variable,
-        left: ce.box(["Divide", e.left, ce.box(arg!)]).simplify(),
-        right: ce.box(["Divide", e.right, ce.box(arg!)]).simplify()
+        left: ce.box(["Divide", e.left, arg!]).simplify(),
+        right: ce.box(["Divide", e.right, arg!]).simplify()
       }];
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;:&nbsp;${latex(ce.box(arg!))}`
+    return html`|&nbsp;&nbsp;:&nbsp;${latex(arg!)}`
   }
 };
 const SQRT: Operation = {
@@ -135,11 +139,11 @@ const ROOT: Operation = {
   }
 };
 const SQUARE: Operation = {
-  name: "square", title: "`\\square^2`", help: "Äquivalenzumformung: Beide Seiten quadrieren", arg: false,
+  name: "square", title: "`^2`", help: "Äquivalenzumformung: Beide Seiten quadrieren", arg: false,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(!arg);
-    const left = ce.box(["Square", e.left]).simplify();
-    const right = ce.box(["Square", e.right]).simplify();
+    const left = ce.box(["SQUARE", e.left]).simplify();
+    const right = ce.box(["SQUARE", e.right]).simplify();
 
     return [{
       variable: e.variable,
@@ -148,7 +152,7 @@ const SQUARE: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${renderLatex("\\square^2")}`
+    return html`|&nbsp;&nbsp;${renderLatex("^2")}`
   }
 };
 const LN: Operation = {
@@ -303,8 +307,8 @@ const ARCCOS: Operation = {
 
 const PERIODIZE: Operation = {
   name: "periodize",
-  title: "`+ k\\cdot\\square`",
-  help: "Periodisierung. Die ein oder zwei Lösungen wiederholen sich periodisch.",
+  title: "Periodisieren",
+  help: "Die ein oder zwei Lösungen wiederholen sich periodisch.",
   arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
@@ -328,7 +332,7 @@ const PERIODIZE: Operation = {
 };
 const EXP: Operation = {
   name: "exp",
-  title: "`e^{\\square}`",
+  title: "`e^{}`",
   help: "Äquivalenzumformung: Auf beiden Seiten die Exponentialfunktion",
   arg: false,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
@@ -343,21 +347,21 @@ const EXP: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${renderLatex("e^{\\square}")}`
+    return html`|&nbsp;&nbsp;${renderLatex("e^{}")}`
   }
 };
 const FACTORIZE: Operation = {
-  name: "factorize", title: "`\\square`&nbsp;ausklammern", help: "Auf der linken Seite den Ausdruck ausklammern", arg: true,
+  name: "factorize", title: "Ausklammern", help: "Auf der linken Seite den Ausdruck ausklammern", arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
     return [{
       variable: e.variable,
-      left: ce.box(["Multiply", arg!, ce.box(["Divide", e.left, ce.box(arg!)]).simplify()]),
+      left: ce.box(["Multiply", arg!, ce.box(["Divide", e.left, arg!]).simplify()]),
       right: e.right
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`||&nbsp;&nbsp;${latex(ce.box(arg!))}&nbsp;<i>ausklammern</i>`
+    return html`||&nbsp;&nbsp;${latex(arg!)}&nbsp;<i>ausklammern</i>`
   }
 };
 const EXPAND: Operation = {
@@ -419,11 +423,11 @@ const RESUBSTITUTE: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`||&nbsp;&nbsp;u&nbsp;:=&nbsp;${latex(ce.box(arg!))}`
+    return html`||&nbsp;&nbsp;u&nbsp;:=&nbsp;${latex(arg!)}`
   }
 };
 const QUADRATIC_FORMULA: Operation = {
-  name: "quadratic_formula", title: "MNF", help: "Für Gleichungen der Form ax²+bx+c=0", arg: false,
+  name: "quadratic_formula", title: "MNF", help: "Mitternachtsformel für Gleichungen der Form ax²+bx+c=0", arg: false,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(!arg);
 
@@ -489,7 +493,7 @@ const QUADRATIC_FORMULA: Operation = {
   }
 };
 const ZERO_PRODUCT: Operation = {
-  name: "zero_product", title: "SVNP", help: "Eine Seite muss ein Produkt, die andere Null sein", arg: false,
+  name: "zero_product", title: "SVNP", help: "Satz vom Nullprodukt. Eine Seite muss ein Produkt, die andere Null sein", arg: false,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(!arg);
 
@@ -532,7 +536,7 @@ const NULL_FORM: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${latex(ce.box(arg!))}`
+    return html`|&nbsp;&nbsp;${latex(arg!)}`
   }
 };
 const SIMPLIFY: Operation = {
