@@ -47,3 +47,21 @@ npm start
 ```
 
 To run a local development server that serves the basic demo located in `demo/index.html`
+
+## Parameterization
+
+| Name | Type | Explanation
+| ---- | ---- | ----------- |
+| operations | multiple values, comma separated: `exponential`, `polynomial`, `polynomial-root`, `trigonometrical` and/or `add`, `subtract`, `multiply`, `divide`, `sqrt`, `root`, `ln`, `arcsin`, `arccos`, `factorize`, `expand`, `zero_product`, `quadratic_formula`, `substitute`, `resubstitute`, `periodize`
+| strategy   | `polynomial`, `exponential` or `trigonometrical` |
+| solutions  | multiple values, comma separated LaTeX |
+| hints      | json array of objects `{ match: string, operation: string, message: string }` |
+
+### Example
+```<kmap-solvee operations="polynomial, square" strategy="polynomial" solutions="-2,-1,0" hints='[
+{
+  "match": "(x+2)(x+1)^2x=0",
+  "operation": "expand",
+  "message": "Ausmultiplizieren ist nur selten eine gute Strategie. Hier führt es in eine Sackgasse!"
+}]'>(x+2)(x+1)^2x=0</kmap-solvee>
+```
