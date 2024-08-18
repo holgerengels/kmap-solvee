@@ -1,4 +1,4 @@
-[![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md) [![de](https://img.shields.io/badge/lang-de-green.svg)](./README.de. md)
+[![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md) [![de](https://img.shields.io/badge/lang-de-green.svg)](./README.de.md)
 
 # \<kmap-solvee>
 
