@@ -1,3 +1,5 @@
+[![de](https://img.shields.io/badge/lang-de-red.svg)](./README.de.md)
+
 # \<kmap-solvee>
 
 ## Installation
