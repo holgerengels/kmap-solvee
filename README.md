@@ -1,6 +1,8 @@
-[![de](https://img.shields.io/badge/lang-de-red.svg)](./README.de.md)
+[![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md) [![de](https://img.shields.io/badge/lang-de-green.svg)](./README.de. md)
 
 # \<kmap-solvee>
+
+Interactive strategy trainer for solving of polynomial, exponential and trigonometrical equations
 
 ## Installation
 
@@ -36,12 +38,6 @@ No installation required. Find a complete example webpage [here](https://github.
       }]'>2x^4-2x^2=0</kmap-solvee>
 ```
 
-## Tooling configs
-
-For most of the tools, the configuration is in the `package.json` to reduce the amount of files in your project.
-
-If you customize the configuration a lot, you can consider moving them to individual files.
-
 ## Local Demo with `web-dev-server`
 
 ```bash
@@ -56,7 +52,7 @@ To run a local development server that serves the basic demo located in `demo/in
 | ---- | ---- | ----------- |
 | operations | multiple values, comma separated: `exponential`, `polynomial`, `polynomial-root`, `trigonometrical` and/or `add`, `subtract`, `multiply`, `divide`, `sqrt`, `root`, `ln`, `arcsin`, `arccos`, `factorize`, `expand`, `zero_product`, `quadratic_formula`, `substitute`, `resubstitute`, `periodize`
 | strategy   | `polynomial`, `exponential` or `trigonometrical` |
-| solutions  | multiple values, comma separated LaTeX |
+| solutions  | multiple values, comma separated, LaTeX notated |
 | hints      | json array of objects `{ match: string, operation: string, message: string }` |
 
 ### Example
