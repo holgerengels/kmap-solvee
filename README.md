@@ -2,7 +2,12 @@
 
 # \<kmap-solvee>
 
-Interactive strategy trainer for solving of polynomial, exponential and trigonometrical equations
+Interactive strategy trainer for solving of polynomial, exponential and trigonometrical equations. \<kmap-solvee> has emerged in the context of the [KMap](https://kmap.eu) project.
+
+The goal of the strategy trainer is to train the ability to choose a suitable solution strategy separated from the skills, required to actually solve the equations (equivalence and term transformations).
+
+**Examples**
+* Polynomial equations [one](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%201) [two](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%202) [three](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%203)
 
 ## Installation
 
