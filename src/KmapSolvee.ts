@@ -2,10 +2,11 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {property, query, state} from 'lit/decorators.js';
 import {BoxedExpression} from "@cortex-js/compute-engine";
 import {katexStyles} from "./katex-css.js";
-import {latex, renderLatex} from "./util";
-import {operation, operations, sets} from "./operations";
-import {ce, Equation, Hint, Operation, Strategy} from "./model";
+import {renderBoxed, renderLatex} from "./util";
+import {operations, sets} from "./operations";
+import {ce, Equation, Hint, Operation} from "./model";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {strategy} from "./strategies";
 
 const LOGGING = false;
 
@@ -18,6 +19,7 @@ export class KmapSolvee extends LitElement {
     :host {
       display: flex;
       flex-flow: column;
+      gap: 8px;
 //      --elevation-00: 0px 0px 0px 0px rgba(0, 0, 0, 0.2), 0px 0px 0px 0px rgba(0, 0, 0, 0.14), 0px 0px 0px 0px rgba(0, 0, 0, 0.12);
       --elevation-01: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
 //      --elevation-02: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
@@ -39,13 +41,12 @@ export class KmapSolvee extends LitElement {
       display: flex;
       flex-flow: column;
       flex: 1 1;
-      gap: 4px;
+      gap: 8px;
     }
     div.eqs {
       display: flex;
       flex-flow: row wrap;
-      gap: 4px;
-      margin: 4px 0px;
+      gap: 8px;
     }
     span.eq, span.err, span.op, div.args, span.sols, span.msg {
       padding: 8px 12px;
@@ -352,7 +353,7 @@ export class KmapSolvee extends LitElement {
       <div class="block">
         ${e.error ? html`<span class="err" faded>${e.error.match(/`.*`/) ? renderLatex(e.error.substring(1, e.error.length-1)) : e.error}</span>` : html`
         <span class="eq" faded role="button" aria-pressed="${this.selected === e}" @click="${() => this.select(e)}">
-          <span class="e">${latex(ce.box(["Equal", e.left, e.right]))}</span>
+          <span class="e">${renderBoxed(ce.box(["Equal", e.left, e.right]))}</span>
           ${e.operation ? html`<span class="o">${e.operation.render(e.arg)}</span>` : undefined}
         </span>
         ${e.derived && e.derived.length ? html`
@@ -386,6 +387,7 @@ export class KmapSolvee extends LitElement {
     }
     return buffer;
   }
+
   renderArgs(): TemplateResult {
     return html`
       <div class="args" ?hidden="${!this.argsVisible}" @click="${(e) => e.stopPropagation()}" faded>
@@ -413,10 +415,10 @@ export class KmapSolvee extends LitElement {
         ${this.equation ? html`${this.renderEquation(this.equation)}` : ``}
       </div>
       <div class="eqs">
-        <span class="sols">${latex(this.solutions.length ? ce.box(["Equal","L_doublestruck", ["Set", ...this.solutions]]) : ce.box(["Equal","L_doublestruck", ["Set", ce.parse("\\text{...}")]]))}</span>
+        <span class="sols">${renderBoxed(this.solutions.length ? ce.box(["Equal","L_doublestruck", ["Set", ...this.solutions]]) : ce.box(["Equal","L_doublestruck", ["Set", ce.parse("\\text{...}")]]))}</span>
       </div>
       <div class="eqs">
-        ${Array.from(this.messages).map(m => html`<span class="msg" faded>${unsafeHTML(m)}</span>`)}
+        ${Array.from(this.messages).map(m => html`<span class="msg" faded>${this.renderMixed(m)}</span>`)}
       </div>
     `;
   }
@@ -448,105 +450,3 @@ const compareArrays = (a, b) => a.length === b.length && a.every((element, index
 
 const NUMERIC_COMPARISION = (a, b) => a.value - b.value;
 
-const STRATEGY_POLYNOMIAL: Strategy = {
-  name: "polynomial",
-  title: "",
-  help: "",
-  arg: false,
-  async apply(equation, callback) {
-    // terminal
-    if (equation.left.isEqual(ce.box("x")) && !equation.right.has("x"))
-      return;
-    // bring into null form
-    if (equation.right.isNotZero)
-      equation = (await callback(operation("subtract"), equation, equation.right))[0];
-
-    // zero product
-    if (equation.left.head == "Multiply") {
-      console.log(JSON.stringify(equation.left.json) + " is product");
-      let results = await callback(operation("zero_product"), equation);
-      for (let equation of results) {
-        this.apply(equation, callback);
-      }
-      return;
-    }
-    // linear
-    let match = equation.left.match(ce.box(["Add", ["Multiply", "_a", "x"], "_b"]));
-    if (match) {
-      console.log(JSON.stringify(equation.left.json) + " is linear");
-      if (match!._b.isNotZero)
-        equation = (await callback(operation("subtract"), equation, match!._b))[0];
-      if (!match!._a.isOne)
-        equation = (await callback(operation("divide"), equation, match!._a))[0];
-      return;
-    }
-    // maybe factorize
-    if (equation.left.head === "Add" && equation.right.isZero) {
-      let min = 512;
-      equation.left.ops?.forEach(o => {
-        if (o.head === "Negate")
-          o = o.ops![0];
-        if (o.head === "Multiply")
-          o = o.ops![1];
-        if (o.head === "Symbol" && o.has("x"))
-          min = 1;
-        else if (o.head === "Power")
-          min = Math.min(min, o.ops![1].numericValue as number);
-        else
-          min = -1;
-      })
-      if (min != -1) {
-        let result = await callback((operation("factorize")), equation, ce.box(["Power", "x", min]));
-        this.apply(result[0], callback);
-        return;
-      }
-    }
-
-    // power equation
-    match = equation.left.match(ce.box(["Add", ["Multiply", "_a", ["Power", "x", "_n"]], "_b"]));
-    if (match) {
-      console.log(JSON.stringify(equation.left.json) + " is power");
-      if (match!._b.isNotZero)
-        equation = (await callback(operation("subtract"), equation, match!._b))[0];
-      if (!match!._a.isOne)
-        equation = (await callback(operation("divide"), equation, match!._a))[0];
-
-      equation = (match!._n.numericValue === 2 ? await callback(operation("sqrt"), equation) : await callback(operation("root"), equation, match!._n))[0];
-      return;
-    }
-    // quadratic
-    match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "2"], "_a"], ["Multiply", equation.variable, "_b"], "_c"]));
-    if (match) {
-      console.log(JSON.stringify(equation.left.json) + " is quadratic");
-      let results = await callback(operation("quadratic_formula"), equation);
-      return;
-    }
-    // biquadratic
-    let s = 2;
-    match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "4"], "_a"], ["Multiply", ["Power", equation.variable, "2"], "_b"], "_c"]));
-    if (!match) {
-      s = 3;
-      match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "6"], "_a"], ["Multiply", ["Power", equation.variable, "3"], "_b"], "_c"]));
-    }
-    if (!match) {
-      s = 4;
-      match = equation.left.match(ce.box(["Add", ["Multiply", ["Power", equation.variable, "8"], "_a"], ["Multiply", ["Power", equation.variable, "4"], "_b"], "_c"]));
-    }
-    if (match && match._c.isNotZero) {
-      console.log(JSON.stringify(equation.left.json) + " is biquadratic " + s);
-      equation = (await callback(operation("substitute"), equation, ce.box(["Power", "x", s])))[0];
-      let results = await callback(operation("quadratic_formula"), equation);
-      equation = (await callback(operation("resubstitute"), results[0]))[0];
-      this.apply(equation, callback);
-      equation = (await callback(operation("resubstitute"), results[1]))[0];
-      this.apply(equation, callback);
-      return;
-    }
-  }
-}
-
-const strategies: Strategy[] = [ STRATEGY_POLYNOMIAL ];
-
-function strategy(name: string) {
-  return strategies.find(o => o.name === name)!;
-}

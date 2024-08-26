@@ -1,5 +1,5 @@
 import {BoxedExpression, BoxedRule, BoxedSubstitution} from "@cortex-js/compute-engine";
-import {assert, latex, latexOptions, renderLatex} from "./util";
+import {assert, renderBoxed, latexOptions, renderLatex} from "./util";
 import {html, TemplateResult} from "lit";
 import {boxed_0, ce, Equation, Operation} from "./model";
 import katex from "katex";
@@ -17,8 +17,8 @@ const ADD: Operation = {
   },
   render: (arg?: BoxedExpression): TemplateResult => {
     return arg && arg.isNegative
-      ? html`|&nbsp;&nbsp;${latex(arg!)}`
-      : html`|&nbsp;&nbsp;+&nbsp;${latex(arg!)}`
+      ? html`|&nbsp;&nbsp;${renderBoxed(arg!)}`
+      : html`|&nbsp;&nbsp;+&nbsp;${renderBoxed(arg!)}`
   }
 };
 const SUBTRACT: Operation = {
@@ -33,8 +33,8 @@ const SUBTRACT: Operation = {
   },
   render: (arg?: BoxedExpression): TemplateResult => {
     return arg && arg.isNegative
-      ? html`|&nbsp;&nbsp;+&nbsp;${latex(ce.box(["Negate", arg!]))}`
-      : html`|&nbsp;&nbsp;−&nbsp;${latex(arg!)}`
+      ? html`|&nbsp;&nbsp;+&nbsp;${renderBoxed(ce.box(["Negate", arg!]))}`
+      : html`|&nbsp;&nbsp;−&nbsp;${renderBoxed(arg!)}`
   }
 };
 const MULTIPLY: Operation = {
@@ -54,7 +54,7 @@ const MULTIPLY: Operation = {
       }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;·&nbsp;${latex(arg!)}`
+    return html`|&nbsp;&nbsp;·&nbsp;${renderBoxed(arg!)}`
   }
 };
 const DIVIDE: Operation = {
@@ -74,7 +74,7 @@ const DIVIDE: Operation = {
       }];
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;:&nbsp;${latex(arg!)}`
+    return html`|&nbsp;&nbsp;:&nbsp;${renderBoxed(arg!)}`
   }
 };
 const SQRT: Operation = {
@@ -135,7 +135,7 @@ const ROOT: Operation = {
     return result;
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${latex(ce.box(["Root", ce.parse("\\text{}"), arg!]))}`
+    return html`|&nbsp;&nbsp;${renderBoxed(ce.box(["Root", ce.parse("\\text{}"), arg!]))}`
   }
 };
 const SQUARE: Operation = {
@@ -361,7 +361,7 @@ const FACTORIZE: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`||&nbsp;&nbsp;${latex(arg!)}&nbsp;<i>ausklammern</i>`
+    return html`||&nbsp;&nbsp;${renderBoxed(arg!)}&nbsp;<i>ausklammern</i>`
   }
 };
 const EXPAND: Operation = {
@@ -398,7 +398,7 @@ const SUBSTITUTE: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`||&nbsp;&nbsp;${latex(arg!)}&nbsp;:=&nbsp;u`
+    return html`||&nbsp;&nbsp;${renderBoxed(arg!)}&nbsp;:=&nbsp;u`
   }
 };
 const RESUBSTITUTE: Operation = {
@@ -423,7 +423,7 @@ const RESUBSTITUTE: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`||&nbsp;&nbsp;u&nbsp;:=&nbsp;${latex(arg!)}`
+    return html`||&nbsp;&nbsp;u&nbsp;:=&nbsp;${renderBoxed(arg!)}`
   }
 };
 const QUADRATIC_FORMULA: Operation = {
@@ -536,7 +536,7 @@ const NULL_FORM: Operation = {
     }]
   },
   render: (arg?: BoxedExpression): TemplateResult => {
-    return html`|&nbsp;&nbsp;${latex(arg!)}`
+    return html`|&nbsp;&nbsp;${renderBoxed(arg!)}`
   }
 };
 const SIMPLIFY: Operation = {

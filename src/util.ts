@@ -10,7 +10,7 @@ export const latexOptions = {
   invisiblePlus: "+"
 }
 
-export function latex(expression: BoxedExpression) {
+export function renderBoxed(expression: BoxedExpression) {
   return renderLatex(expression.toLatex(latexOptions))
 }
 
@@ -25,6 +25,17 @@ export function renderLatex(tex: string) {
     trust: true,
     displayMode: true
   }))}`;
+}
+
+export function boxedLatex(expression: BoxedExpression) {
+  return latex(expression.toLatex(latexOptions))
+}
+
+export function latex(tex: string) {
+  tex = tex.replace(/\\exponentialE/g, "e");
+  tex = tex.replace(/\\exp\(([^()]*)\)/g, "e^{$1}");
+  tex = tex.replace(/\\\//g, "/");
+  return tex;
 }
 
 export const assert = (assertion: boolean, message?: string, params?: any[]) => {
