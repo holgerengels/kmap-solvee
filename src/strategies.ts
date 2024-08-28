@@ -1,8 +1,7 @@
-import {ce, Strategy} from "./model";
+import {ce, Equation, Strategy} from "./model";
 import {operation} from "./operations";
 import {BoxedExpression} from "@cortex-js/compute-engine";
-import exp from "node:constants";
-import {renderBoxed, latexOptions, boxedLatex} from "./util";
+import {boxedLatex} from "./util";
 
 const STRATEGY_POLYNOMIAL: Strategy = {
   name: "polynomial",
@@ -100,6 +99,24 @@ const STRATEGY_POLYNOMIAL: Strategy = {
     }
   }
 }
+
+function extractPeriod(expression: BoxedExpression) {
+  let b: BoxedExpression | undefined;
+  if (expression.head === "Multiply") {
+    b = expression.ops!.find(o => !o.has("x"));
+    return ce.box(["Equal", "p", ["Divide", ce.parse("2\\pi"), b!]]).simplify()
+  }
+  else
+    return ce.box(["Equal", "p", ce.parse("2\\pi")]);
+}
+
+function top(equation: Equation) {
+  let top = equation;
+  while (top.former)
+    top = top.former;
+  return top;
+}
+
 const STRATEGY_TRIGONOMETRICAL: Strategy = {
   name: "trigonometrical",
   title: "",
@@ -159,19 +176,34 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
         if (expression.head === "Add")
           expression = expression.ops!.find(o => o.has("x"))!;
         console.log(expression.json)
-        if (expression.head === "Multiply") {
-          let b = expression.ops!.find(o => !o.has("x"));
-          if (b) {
-            let top = equation;
-            while (top.former)
-              top = top.former;
-            top.message = "`" + boxedLatex(ce.box(["Equal", "p", ["Divide", ce.parse("2\\pi"), b]]).simplify()) + "`";
-          }
-        }
+        let p = extractPeriod(expression);
+        top(equation).message = "`" + boxedLatex(p) + "`";
+
         equation = (await callback(operation("substitute"), equation, equation.left.ops![0]))[0];
       }
 
       const results = (await callback(operation("arcsin"), equation));
+      results.forEach(async r => {
+        if (subst)
+          equation = (await callback(operation("resubstitute"), r))[0];
+        this.apply(equation, callback);
+      })
+      return;
+    }
+    if (equation.left.head === "Cos") {
+      const subst = equation.left.ops![0].head !== "Symbol";
+      if (subst) {
+        let expression = ce.box(["ExpandAll", ...equation.left.ops!]).evaluate();
+        if (expression.head === "Add")
+          expression = expression.ops!.find(o => o.has("x"))!;
+        console.log(expression.json)
+        let p = extractPeriod(expression);
+        top(equation).message = "`" + boxedLatex(p) + "`";
+
+        equation = (await callback(operation("substitute"), equation, equation.left.ops![0]))[0];
+      }
+
+      const results = (await callback(operation("arccos"), equation));
       results.forEach(async r => {
         if (subst)
           equation = (await callback(operation("resubstitute"), r))[0];

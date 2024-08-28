@@ -10,11 +10,11 @@
 </head>
 <body>
 <script type="module">
-  import {KmapSolvee} from 'https://cdn.jsdelivr.net/npm/kmap-solvee@0.9.5/+esm'
+  //<![CDATA[
+  import {KmapSolvee} from 'https://cdn.jsdelivr.net/npm/kmap-solvee@0.9.12/+esm'
   window.customElements.define('kmap-solvee', KmapSolvee);
+  //]]>
 </script>
-
-<kmap-solvee operations="polynomial" solutions="-3\times\sqrt{2}-4, 0, 3\times\sqrt{2}-4" strategy="polynomial">x^4+8x^3-2x^2=0</kmap-solvee>
 <kmap-solvee operations="polynomial" strategy="polynomial">\frac{1}{2}(x+2)(x+1)^2x=0</kmap-solvee>
 <kmap-solvee operations="polynomial" solutions="-1,0,1" strategy="polynomial" hints='[
       {
