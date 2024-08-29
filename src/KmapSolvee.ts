@@ -438,8 +438,7 @@ export class KmapSolvee extends LitElement {
     if (strat)
       strat.apply(this.equation, async (op: Operation, e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
         await new Promise(f => setTimeout(f, 500));
-        console.log(ce.box(["Equal", e.left, e.right]).json.toString())
-        console.log(op.name, op.arg)
+        console.log(ce.box(["Equal", e.left, e.right]).json.toString() + " -> " + op.name + " " + (op.arg ? arg : ""))
         return this.apply(op, e, arg);
       });
   }

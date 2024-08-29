@@ -122,6 +122,12 @@ function top(equation: Equation) {
     top = top.former;
   return top;
 }
+function isolated(equation: Equation) {
+  let iso = equation;
+  while (iso.former && !((iso.left.head === "Sin" || iso.left.head === "Cos") && iso.left.has("x")))
+    iso = iso.former;
+  return iso;
+}
 
 const STRATEGY_TRIGONOMETRICAL: Strategy = {
   name: "trigonometrical",
@@ -131,7 +137,7 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
   async apply(equation, callback) {
     // terminal
     if (equation.left.isEqual(ce.box("x")) && !equation.right.has("x")) {
-      await callback(operation("periodize"), equation, extractPeriod(top(equation)));
+      await callback(operation("periodize"), equation, extractPeriod(isolated(equation)));
       return;
     }
     // isolate sin/cos on the left side
