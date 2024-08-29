@@ -3,6 +3,8 @@ import {operation} from "./operations";
 import {BoxedExpression} from "@cortex-js/compute-engine";
 import {boxedLatex} from "./util";
 
+export const boxed_2pi = ce.parse("2\\cdot\\pi");
+
 const STRATEGY_POLYNOMIAL: Strategy = {
   name: "polynomial",
   title: "",
@@ -100,14 +102,18 @@ const STRATEGY_POLYNOMIAL: Strategy = {
   }
 }
 
-function extractPeriod(expression: BoxedExpression) {
+function extractPeriod(equation: Equation) {
+  let expression = ce.box(["ExpandAll", ...equation.left.ops!]).evaluate();
+  if (expression.head === "Add")
+    expression = expression.ops!.find(o => o.has("x"))!;
+
   let b: BoxedExpression | undefined;
   if (expression.head === "Multiply") {
     b = expression.ops!.find(o => !o.has("x"));
-    return ce.box(["Equal", "p", ["Divide", ce.parse("2\\pi"), b!]]).simplify()
+    return ce.box(["Divide", boxed_2pi, b!]).simplify()
   }
   else
-    return ce.box(["Equal", "p", ce.parse("2\\pi")]);
+    return boxed_2pi;
 }
 
 function top(equation: Equation) {
@@ -125,7 +131,7 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
   async apply(equation, callback) {
     // terminal
     if (equation.left.isEqual(ce.box("x")) && !equation.right.has("x")) {
-      await callback(operation("periodize"), equation, ce.parse('2\\pi'));
+      await callback(operation("periodize"), equation, extractPeriod(top(equation)));
       return;
     }
     // isolate sin/cos on the left side
@@ -172,12 +178,8 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
     if (equation.left.head === "Sin") {
       const subst = equation.left.ops![0].head !== "Symbol";
       if (subst) {
-        let expression = ce.box(["ExpandAll", ...equation.left.ops!]).evaluate();
-        if (expression.head === "Add")
-          expression = expression.ops!.find(o => o.has("x"))!;
-        console.log(expression.json)
-        let p = extractPeriod(expression);
-        top(equation).message = "`" + boxedLatex(p) + "`";
+        let p = extractPeriod(equation);
+        top(equation).message = "`" + boxedLatex(ce.box(["Equal", "p", p])) + "`";
 
         equation = (await callback(operation("substitute"), equation, equation.left.ops![0]))[0];
       }
@@ -185,20 +187,16 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
       const results = (await callback(operation("arcsin"), equation));
       results.forEach(async r => {
         if (subst)
-          equation = (await callback(operation("resubstitute"), r))[0];
-        this.apply(equation, callback);
+          r = (await callback(operation("resubstitute"), r))[0];
+        this.apply(r, callback);
       })
       return;
     }
     if (equation.left.head === "Cos") {
       const subst = equation.left.ops![0].head !== "Symbol";
       if (subst) {
-        let expression = ce.box(["ExpandAll", ...equation.left.ops!]).evaluate();
-        if (expression.head === "Add")
-          expression = expression.ops!.find(o => o.has("x"))!;
-        console.log(expression.json)
-        let p = extractPeriod(expression);
-        top(equation).message = "`" + boxedLatex(p) + "`";
+        let p = extractPeriod(equation);
+        top(equation).message = "`" + boxedLatex(ce.box(["Equal", "p", p])) + "`";
 
         equation = (await callback(operation("substitute"), equation, equation.left.ops![0]))[0];
       }
@@ -206,8 +204,8 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
       const results = (await callback(operation("arccos"), equation));
       results.forEach(async r => {
         if (subst)
-          equation = (await callback(operation("resubstitute"), r))[0];
-        this.apply(equation, callback);
+          r = (await callback(operation("resubstitute"), r))[0];
+        this.apply(r, callback);
       })
       return;
     }
