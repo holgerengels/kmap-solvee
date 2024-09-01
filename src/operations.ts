@@ -378,8 +378,8 @@ const EXPAND: Operation = {
     return html`||&nbsp;&nbsp;<i>ausmultiplizieren</i>`
   }
 };
-const SUBSTITUTE: Operation = {
-  name: "substitute", title: "Subst", help: "Alle Vorkommen des Ausdrucks werden durch u ersetzt", arg: true,
+const SUBSTITUTE_POLY: Operation = {
+  name: "substitute_poly", title: "Subst", help: "Alle Vorkommen des Ausdrucks werden durch u ersetzt", arg: true,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(arg !== undefined);
     //const exp: BoxedRule = { id: "exp", priority: 500, condition: undefined, match: ce.box(["Power", "e", "_a"]), replace: ce.box(["Exp", "_a"]) };
@@ -401,13 +401,28 @@ const SUBSTITUTE: Operation = {
     return html`||&nbsp;&nbsp;${renderBoxed(arg!)}&nbsp;:=&nbsp;u`
   }
 };
+const SUBSTITUTE_TRIG: Operation = {
+  name: "substitute_trig", title: "Subst", help: "Alle Vorkommen des Ausdrucks werden durch u ersetzt", arg: true,
+  func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
+    assert(arg !== undefined);
+    const subst: BoxedRule = {id: "subst", priority: 300, condition: undefined, match: arg!, replace: ce.box("u")};
+    return [{
+      variable: "u",
+      left: e.left.head === "Sin" ? ce.box(["Sin", "u"]) : ce.box(["Cos", "u"]),
+      right: e.right,
+    }]
+  },
+  render: (arg?: BoxedExpression): TemplateResult => {
+    return html`||&nbsp;&nbsp;${renderBoxed(arg!)}&nbsp;:=&nbsp;u`
+  }
+};
 const RESUBSTITUTE: Operation = {
   name: "resubstitute", title: "Resubst", help: "u wird in den Ausdruck zurück ersetzt", arg: false,
   func: async (e: Equation, arg?: BoxedExpression): Promise<Equation[]> => {
     assert(!arg);
     let ee: Equation | undefined = e;
     while (ee && !arg) {
-      if (ee.operation === SUBSTITUTE)
+      if (ee.operation === SUBSTITUTE_POLY || ee.operation === SUBSTITUTE_TRIG)
         arg = ee.arg;
       ee = ee.former;
     }
@@ -563,14 +578,14 @@ export const error = (e: Equation, message: string) => [{
 
 export const operations: Operation[] = [
   ADD, SUBTRACT, MULTIPLY, DIVIDE, SQRT, ROOT, SQUARE, LN, ARCSIN, ARCCOS, EXP,
-  EXPAND, FACTORIZE, ZERO_PRODUCT, QUADRATIC_FORMULA, SUBSTITUTE, RESUBSTITUTE, PERIODIZE, NULL_FORM, SIMPLIFY
+  EXPAND, FACTORIZE, ZERO_PRODUCT, QUADRATIC_FORMULA, SUBSTITUTE_POLY, SUBSTITUTE_TRIG, RESUBSTITUTE, PERIODIZE, NULL_FORM, SIMPLIFY
 ];
 export function operation(name: string) {
   return operations.find(o => o.name === name)!;
 }
 export const sets: Map<string, string[]> = new Map([
-  ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
-  ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
-  ['polynomial-root', ["add", "subtract", "multiply", "divide", "root", "factorize", "expand", "zero_product", "quadratic_formula", "substitute", "resubstitute"]],
-  ['trigonometrical', ["add", "subtract", "multiply", "divide", "arcsin", "arccos", "factorize", "expand", "zero_product", "substitute", "resubstitute", "periodize"]]
+  ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
+  ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
+  ['polynomial-root', ["add", "subtract", "multiply", "divide", "root", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
+  ['trigonometrical', ["add", "subtract", "multiply", "divide", "arcsin", "arccos", "factorize", "expand", "zero_product", "substitute_trig", "resubstitute", "periodize"]]
 ]);

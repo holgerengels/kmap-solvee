@@ -91,7 +91,7 @@ const STRATEGY_POLYNOMIAL: Strategy = {
     }
     if (match && match._c.isNotZero) {
       console.log(JSON.stringify(equation.left.json) + " is biquadratic " + s);
-      equation = (await callback(operation("substitute"), equation, ce.box(["Power", "x", s])))[0];
+      equation = (await callback(operation("substitute_poly"), equation, ce.box(["Power", "x", s])))[0];
       let results = await callback(operation("quadratic_formula"), equation);
       equation = (await callback(operation("resubstitute"), results[0]))[0];
       this.apply(equation, callback);
@@ -182,12 +182,12 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
       return;
     }
     if (equation.left.head === "Sin") {
-      const subst = equation.left.ops![0].head !== "Symbol";
+      const subst = !equation.left.ops![0].isEqual(ce.box("x"));
       if (subst) {
         let p = extractPeriod(equation);
         top(equation).message = "`" + boxedLatex(ce.box(["Equal", "p", p])) + "`";
 
-        equation = (await callback(operation("substitute"), equation, equation.left.ops![0]))[0];
+        equation = (await callback(operation("substitute_trig"), equation, equation.left.ops![0]))[0];
       }
 
       const results = (await callback(operation("arcsin"), equation));
@@ -199,12 +199,12 @@ const STRATEGY_TRIGONOMETRICAL: Strategy = {
       return;
     }
     if (equation.left.head === "Cos") {
-      const subst = equation.left.ops![0].head !== "Symbol";
+      const subst = !equation.left.ops![0].isEqual(ce.box("x"));
       if (subst) {
         let p = extractPeriod(equation);
         top(equation).message = "`" + boxedLatex(ce.box(["Equal", "p", p])) + "`";
 
-        equation = (await callback(operation("substitute"), equation, equation.left.ops![0]))[0];
+        equation = (await callback(operation("substitute_trig"), equation, equation.left.ops![0]))[0];
       }
 
       const results = (await callback(operation("arccos"), equation));
