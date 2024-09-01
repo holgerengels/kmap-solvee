@@ -1,8 +1,11 @@
 import {BoxedExpression, ComputeEngine} from "@cortex-js/compute-engine";
 import {TemplateResult} from "lit";
+import AsciiMathParser from 'asciimath2tex';
 
 export const ce = new ComputeEngine();
 export const boxed_0 = ce.box(0);
+
+export const parser = new AsciiMathParser();
 
 export interface Equation {
   variable: string,

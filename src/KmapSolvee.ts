@@ -2,7 +2,7 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from 'lit';
 import {property, query, state} from 'lit/decorators.js';
 import {BoxedExpression} from "@cortex-js/compute-engine";
 import {katexStyles} from "./katex-css.js";
-import {renderBoxed, renderLatex} from "./util";
+import {asciiparse, renderBoxed, renderLatex} from "./util";
 import {operations, sets} from "./operations";
 import {ce, Equation, Hint, Operation} from "./model";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
@@ -197,7 +197,7 @@ export class KmapSolvee extends LitElement {
     if (_changedProperties.has("solutionTex")) {
       if (this.solutionTex) {
         const expected: BoxedExpression[] = [];
-        this.solutionTex.split(",").forEach(n => {expected.push(ce.parse(n))})
+        this.solutionTex.split(",").forEach(n => {expected.push(asciiparse(n))})
         this.expectedSolutions = Array.from(new Set(expected)).sort(NUMERIC_COMPARISION);
       }
     }
@@ -220,7 +220,7 @@ export class KmapSolvee extends LitElement {
     console.log(content)
     if (content) {
       let pos = content.indexOf('=')
-      this.equation = { variable: "x", left: ce.parse(content.substring(0, pos))!, right: ce.parse(content.substring(pos+1))!}
+      this.equation = { variable: "x", left: asciiparse(content.substring(0, pos))!, right: asciiparse(content.substring(pos+1))!}
       this.selected = this.equation
     }
   }
@@ -273,7 +273,7 @@ export class KmapSolvee extends LitElement {
     if (equation.message)
       messages.push(equation.message);
     for (const hint of this.hints) {
-      if (equation.operation?.name === hint.operation && ce.box(["Equal", equation.left, equation.right]).match(ce.parse(hint.match))) {
+      if (equation.operation?.name === hint.operation && ce.box(["Equal", equation.left, equation.right]).match(asciiparse(hint.match))) {
         messages.push(hint.message);
       }
     }
@@ -326,7 +326,7 @@ export class KmapSolvee extends LitElement {
         this.currentOperation = undefined;
       }
       this.argsVisible = false;
-      let arg = this.ie.value && this.ie.value !== "" ? ce.parse(this.ie.value) : undefined;
+      let arg = this.ie.value && this.ie.value !== "" ? asciiparse(this.ie.value) : undefined;
       this.apply(o, this.selected, arg);
       this.ie.value = "";
     }

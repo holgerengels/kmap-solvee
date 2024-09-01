@@ -8,6 +8,7 @@ The goal of the strategy trainer is to train the ability to choose a suitable so
 
 **Examples**
 * Polynomial equations [one](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%201) [two](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%202) [three](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%203)
+* Trigonometricat equations [one](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%201) [two](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%202) [three](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%203) [four](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%204)
 
 ## Installation
 
@@ -22,7 +23,7 @@ npm i kmap-solvee
   import 'kmap-solvee/kmap-solvee.js';
 </script>
 
-<kmap-solvee operations="exponential">e^x+e^{2x}=e</kmap-solvee>
+<kmap-solvee operations="exponential">e^x+e^(2x)=e</kmap-solvee>
 ```
 
 ## Usage without build (load directly from cdn)
@@ -38,7 +39,7 @@ No installation required. Find a complete example webpage [here](https://github.
 <kmap-solvee operations="polynomial" solutions="-1,0,1" strategy="polynomial" hints='[
       {
         "match": "_x^4+_x^2=0",
-        "operation": "substitute",
+        "operation": "substitute_poly",
         "message": "Kann man mit Substitution lösen, schneller gehts mit x² Ausklammern und dem Satz vom Nullprodukt"
       }]'>2x^4-2x^2=0</kmap-solvee>
 ```
@@ -53,12 +54,12 @@ To run a local development server that serves the basic demo located in `demo/in
 
 ## Parameterization
 
-| Name | Type | Explanation
-| ---- | ---- | ----------- |
-| operations | multiple values, comma separated: `exponential`, `polynomial`, `polynomial-root`, `trigonometrical` and/or `add`, `subtract`, `multiply`, `divide`, `sqrt`, `root`, `ln`, `arcsin`, `arccos`, `factorize`, `expand`, `zero_product`, `quadratic_formula`, `substitute`, `resubstitute`, `periodize`
-| strategy   | `polynomial`, `exponential` or `trigonometrical` |
-| solutions  | multiple values, comma separated, LaTeX notated |
-| hints      | json array of objects `{ match: string, operation: string, message: string }` |
+| Name | Type                                                                                                                                                                                                                                                                                                                        | Explanation
+| ---- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| ----------- |
+| operations | multiple values, comma separated: `exponential`, `polynomial`, `polynomial_root`, `trigonometrical` and/or `add`, `subtract`, `multiply`, `divide`, `sqrt`, `root`, `ln`, `arcsin`, `arccos`, `factorize`, `expand`, `zero_product`, `quadratic_formula`, `substitute_poly`, `substitute_trig`, `resubstitute`, `periodize` 
+| strategy   | `polynomial`, `exponential` or `trigonometrical`                                                                                                                                                                                                                                                                            |
+| solutions  | multiple values, comma separated, ASCIImath notated                                                                                                                                                                                                                                                                         |
+| hints      | json array of objects `{ match: string, operation: string, message: string }`                                                                                                                                                                                                                                               |
 
 ### Example
 ```<kmap-solvee operations="polynomial, square" strategy="polynomial" solutions="-2,-1,0" hints='[

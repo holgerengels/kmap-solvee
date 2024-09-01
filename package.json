@@ -1,6 +1,6 @@
 {
   "name": "kmap-solvee",
-  "version": "0.9.16",
+  "version": "0.9.17",
   "description": "Interactively solve mathematical equations",
   "license": "MIT",
   "author": "Holger Engels",
@@ -50,8 +50,9 @@
   },
   "dependencies": {
     "@cortex-js/compute-engine": "^0.25.1",
-    "lit": "^2.8.0",
+    "asciimath2tex": "^1.4.0",
     "katex": "^0.16.11",
+    "lit": "^2.8.0",
     "jsxgraph": "^1.9.2",
     "kmap-jsxgraph": "^0.9.23"
   },

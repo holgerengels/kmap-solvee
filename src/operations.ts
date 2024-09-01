@@ -586,6 +586,6 @@ export function operation(name: string) {
 export const sets: Map<string, string[]> = new Map([
   ['exponential', ["add", "subtract", "multiply", "divide", "ln", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
   ['polynomial', ["add", "subtract", "multiply", "divide", "sqrt", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
-  ['polynomial-root', ["add", "subtract", "multiply", "divide", "root", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
+  ['polynomial_root', ["add", "subtract", "multiply", "divide", "root", "factorize", "expand", "zero_product", "quadratic_formula", "substitute_poly", "resubstitute"]],
   ['trigonometrical', ["add", "subtract", "multiply", "divide", "arcsin", "arccos", "factorize", "expand", "zero_product", "substitute_trig", "resubstitute", "periodize"]]
 ]);

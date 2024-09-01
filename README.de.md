@@ -8,6 +8,7 @@ Das Ziel des Strategietrainers ist es, die Fähigkeit, eine geeignete Lösungsst
 
 **Beispiele**
 * Polynomgleichung [eins](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%201) [zwei](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%202) [drei](https://kmap.eu/app/exercise/Mathematik/Ganzrationale%20Funktionen/Polynomgleichungen/Strategietrainer%203)
+* Trigonometrische Gleichungen [eins](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%201) [zwei](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%202) [drei](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%203) [vier](https://kmap.eu/app/exercise/Mathematik/Trigonometrische%20Funktionen/Trigonometrische%20Gleichungen/Strategietrainer%204)
 
 ## Installation
 
@@ -22,7 +23,7 @@ npm i kmap-solvee
   import 'kmap-solvee/kmap-solvee.js';
 </script>
 
-<kmap-solvee operations="exponential">e^x+e^{2x}=e</kmap-solvee>
+<kmap-solvee operations="exponential">e^x+e^(2x)=e</kmap-solvee>
 ```
 
 ## Einsatz ohne Bild (direkt vom cdn laden)
@@ -38,7 +39,7 @@ Keine Installation erforderlich. Hier gibt es eine komplette Beispielseite [here
 <kmap-solvee operations="polynomial" solutions="-1,0,1" strategy="polynomial" hints='[
       {
         "match": "_x^4+_x^2=0",
-        "operation": "substitute",
+        "operation": "substitute_poly",
         "message": "Kann man mit Substitution lösen, schneller gehts mit x² Ausklammern und dem Satz vom Nullprodukt"
       }]'>2x^4-2x^2=0</kmap-solvee>
 ```
@@ -55,9 +56,9 @@ Es wird ein lokaler Development Server gestartet, der die einfachen Demos aus de
 
 | Name | Typ | Erklärung |
 | ---- | --- | ----------- |
-| operations | mehrere Werte, Komma separiert: `exponential`, `polynomial`, `polynomial-root`, `trigonometrical` and/or `add`, `subtract`, `multiply`, `divide`, `sqrt`, `root`, `ln`, `arcsin`, `arccos`, `factorize`, `expand`, `zero_product`, `quadratic_formula`, `substitute`, `resubstitute`, `periodize`
+| operations | mehrere Werte, Komma separiert: `exponential`, `polynomial`, `polynomial_root`, `trigonometrical` and/or `add`, `subtract`, `multiply`, `divide`, `sqrt`, `root`, `ln`, `arcsin`, `arccos`, `factorize`, `expand`, `zero_product`, `quadratic_formula`, `substitute_poly`, `substitute_trig` `resubstitute`, `periodize`
 | strategy   | `polynomial`, `exponential` oder `trigonometrical` |
-| solutions  | mehrere Werte, Komma separiert, LaTeX notiert |
+| solutions  | mehrere Werte, Komma separiert, ASCIImath notiert |
 | hints      | json Array von Objekten `{ match: string, operation: string, message: string }` |
 
 ### Beispiel

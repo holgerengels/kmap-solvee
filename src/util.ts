@@ -2,6 +2,7 @@ import {html} from "lit";
 import katex from "katex";
 import {BoxedExpression} from "@cortex-js/compute-engine";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {ce, parser} from "./model";
 
 export const latexOptions = {
   decimalMarker: "{,}",
@@ -43,3 +44,7 @@ export const assert = (assertion: boolean, message?: string, params?: any[]) => 
   if (!assertion)
     throw new Error();
 };
+
+export function asciiparse(asciimath: string) {
+  return ce.parse(parser.parse(asciimath));
+}
